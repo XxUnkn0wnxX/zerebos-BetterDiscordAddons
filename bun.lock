@@ -11,7 +11,7 @@
         "@types/node": "^25.3.3",
         "@types/react": "^19.2.14",
         "@types/react-reconciler": "^0.33.0",
-        "esbuild": "^0.27.3",
+        "esbuild": "0.26.0",
         "esbuild-svelte": "^0.9.4",
         "eslint": "^10.0.2",
         "globals": "^17.4.0",
@@ -35,7 +35,7 @@
 
     "@esbuild/darwin-arm64": ["@esbuild/darwin-arm64@0.27.3", "", { "os": "darwin", "cpu": "arm64" }, "sha512-Re491k7ByTVRy0t3EKWajdLIr0gz2kKKfzafkth4Q8A5n1xTHrkqZgLLjFEHVD+AXdUGgQMq+Godfq45mGpCKg=="],
 
-    "@esbuild/darwin-x64": ["@esbuild/darwin-x64@0.27.3", "", { "os": "darwin", "cpu": "x64" }, "sha512-vHk/hA7/1AckjGzRqi6wbo+jaShzRowYip6rt6q7VYEDX4LEy1pZfDpdxCBnGtl+A5zq8iXDcyuxwtv3hNtHFg=="],
+    "@esbuild/darwin-x64": ["@esbuild/darwin-x64@0.26.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-OPnYj0zpYW0tHusMefyaMvNYQX5pNQuSsHFTHUBNp3vVXupwqpxofcjVsUx11CQhGVkGeXjC3WLjh91hgBG2xw=="],
 
     "@esbuild/freebsd-arm64": ["@esbuild/freebsd-arm64@0.27.3", "", { "os": "freebsd", "cpu": "arm64" }, "sha512-ipTYM2fjt3kQAYOvo6vcxJx3nBYAzPjgTCk7QEgZG8AUO3ydUhvelmhrbOheMnGOlaSFUoHXB6un+A7q4ygY9w=="],
 
@@ -181,7 +181,7 @@
 
     "devalue": ["devalue@5.6.3", "", {}, "sha512-nc7XjUU/2Lb+SvEFVGcWLiKkzfw8+qHI7zn8WYXKkLMgfGSHbgCEaR6bJpev8Cm6Rmrb19Gfd/tZvGqx9is3wg=="],
 
-    "esbuild": ["esbuild@0.27.3", "", { "optionalDependencies": { "@esbuild/aix-ppc64": "0.27.3", "@esbuild/android-arm": "0.27.3", "@esbuild/android-arm64": "0.27.3", "@esbuild/android-x64": "0.27.3", "@esbuild/darwin-arm64": "0.27.3", "@esbuild/darwin-x64": "0.27.3", "@esbuild/freebsd-arm64": "0.27.3", "@esbuild/freebsd-x64": "0.27.3", "@esbuild/linux-arm": "0.27.3", "@esbuild/linux-arm64": "0.27.3", "@esbuild/linux-ia32": "0.27.3", "@esbuild/linux-loong64": "0.27.3", "@esbuild/linux-mips64el": "0.27.3", "@esbuild/linux-ppc64": "0.27.3", "@esbuild/linux-riscv64": "0.27.3", "@esbuild/linux-s390x": "0.27.3", "@esbuild/linux-x64": "0.27.3", "@esbuild/netbsd-arm64": "0.27.3", "@esbuild/netbsd-x64": "0.27.3", "@esbuild/openbsd-arm64": "0.27.3", "@esbuild/openbsd-x64": "0.27.3", "@esbuild/openharmony-arm64": "0.27.3", "@esbuild/sunos-x64": "0.27.3", "@esbuild/win32-arm64": "0.27.3", "@esbuild/win32-ia32": "0.27.3", "@esbuild/win32-x64": "0.27.3" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-8VwMnyGCONIs6cWue2IdpHxHnAjzxnw2Zr7MkVxB2vjmQ2ivqGFb4LEG3SMnv0Gb2F/G/2yA8zUaiL1gywDCCg=="],
+    "esbuild": ["esbuild@0.26.0", "", { "optionalDependencies": { "@esbuild/aix-ppc64": "0.26.0", "@esbuild/android-arm": "0.26.0", "@esbuild/android-arm64": "0.26.0", "@esbuild/android-x64": "0.26.0", "@esbuild/darwin-arm64": "0.26.0", "@esbuild/darwin-x64": "0.26.0", "@esbuild/freebsd-arm64": "0.26.0", "@esbuild/freebsd-x64": "0.26.0", "@esbuild/linux-arm": "0.26.0", "@esbuild/linux-arm64": "0.26.0", "@esbuild/linux-ia32": "0.26.0", "@esbuild/linux-loong64": "0.26.0", "@esbuild/linux-mips64el": "0.26.0", "@esbuild/linux-ppc64": "0.26.0", "@esbuild/linux-riscv64": "0.26.0", "@esbuild/linux-s390x": "0.26.0", "@esbuild/linux-x64": "0.26.0", "@esbuild/netbsd-arm64": "0.26.0", "@esbuild/netbsd-x64": "0.26.0", "@esbuild/openbsd-arm64": "0.26.0", "@esbuild/openbsd-x64": "0.26.0", "@esbuild/openharmony-arm64": "0.26.0", "@esbuild/sunos-x64": "0.26.0", "@esbuild/win32-arm64": "0.26.0", "@esbuild/win32-ia32": "0.26.0", "@esbuild/win32-x64": "0.26.0" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-3Hq7jri+tRrVWha+ZeIVhl4qJRha/XjRNSopvTsOaCvfPHrflTYTcUFcEjMKdxofsXXsdc4zjg5NOTnL4Gl57Q=="],
 
     "esbuild-svelte": ["esbuild-svelte@0.9.4", "", { "dependencies": { "@jridgewell/trace-mapping": "^0.3.19" }, "peerDependencies": { "esbuild": ">=0.17.0", "svelte": ">=4.2.1 <6" } }, "sha512-v/a0GjkKN06nal2QLluxjk2GXsei3fdtjIuHRa6pVnri5rQBZ6pj4a2WwjLfRojgRsLwDHl4xSeZ1BeUHsqQrw=="],
 

@@ -13,7 +13,7 @@
     "@types/node": "^25.3.3",
     "@types/react": "^19.2.14",
     "@types/react-reconciler": "^0.33.0",
-    "esbuild": "^0.27.3",
+    "esbuild": "0.26.0",
     "esbuild-svelte": "^0.9.4",
     "eslint": "^10.0.2",
     "globals": "^17.4.0",

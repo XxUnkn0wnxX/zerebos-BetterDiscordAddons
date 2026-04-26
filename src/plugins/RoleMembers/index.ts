@@ -127,15 +127,19 @@ export default class RoleMembers extends Plugin {
 
     patchGuildContextMenu() {
         this.contextMenuPatch = ContextMenu.patch("guild-context", (retVal: ReactElement<{children?: ReactElement<{label?: string;}>[];}>, props) => {
-            const guild = props.guild;
-            const guildId = guild.id;
+            const guild = props?.guild;
+            const guildId = guild?.id;
+            if (!guildId) return;
+
             const roles = getRoles(guild);
+            if (!roles) return;
             const roleItems = [];
 
-            const members = this.settings.showCounts ? GuildMemberStore.getMembers(guildId) : [];
+            const members = this.settings.showCounts ? (GuildMemberStore.getMembers(guildId) ?? []) : [];
 
-            for (const roleId in roles) {
-                const role = roles[roleId];
+            for (const [roleId, role] of Object.entries(roles)) {
+                if (!role?.id || !role?.name) continue;
+
                 let label = role.name;
                 if (this.settings.showCounts) {
                     let membersInRole = members;
