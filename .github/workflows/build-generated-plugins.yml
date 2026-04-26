@@ -1,0 +1,97 @@
+name: Build generated plugin files
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - "src/**"
+      - "scripts/**"
+      - "package.json"
+      - "bun.lock"
+      - "tsconfig.json"
+      - "scripts/tsconfig.json"
+      - "eslint.config.js"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Prepare BetterDiscord build directory
+        run: mkdir -p "$HOME/.config/BetterDiscord/plugins"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts --save-text-lockfile
+
+      - name: Build all plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for dir in src/plugins/*; do
+            [ -d "$dir" ] || continue
+            plugin="$(basename "$dir")"
+            npm_package_json="$GITHUB_WORKSPACE/package.json" bun "$GITHUB_WORKSPACE/scripts/build.ts" "$plugin"
+          done
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit generated plugins to develop
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git checkout develop
+          git add Plugins/*/*.plugin.js
+
+          if git diff --cached --quiet; then
+            echo "No generated plugin changes for develop."
+            exit 0
+          fi
+
+          git commit -m "Build generated plugin files" -m "Automation
+          - rebuild Plugins/*.plugin.js from develop source changes
+          - triggered only by develop source/build config updates"
+          git push origin HEAD:develop
+
+      - name: Sync generated plugins to master
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch origin develop master
+          git checkout master
+          git pull --ff-only origin master
+
+          plugin_files=(Plugins/*/*.plugin.js)
+          git checkout origin/develop -- "${plugin_files[@]}"
+          git add "${plugin_files[@]}"
+
+          if git diff --cached --quiet; then
+            echo "No generated plugin changes for master."
+            exit 0
+          fi
+
+          git commit -m "Sync generated plugin files from develop" -m "Automation
+          - copy rebuilt Plugins/*.plugin.js from develop
+          - triggered by develop source/build config updates"
+          git push origin HEAD:master

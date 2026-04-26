@@ -1,6 +1,9 @@
 name: Auto-close PRs modifying restricted files
 
-permissions: write-all
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
 on:
   pull_request_target:
@@ -10,9 +13,6 @@ jobs:
   check-restricted-changes:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Get list of changed files
         id: changed-files
         uses: actions/github-script@v7
