@@ -1,4 +1,5 @@
 name: Discord Source detection
+# No-op touch commit to force workflow registration on the fork.
 on: [issues]
 jobs:
   autoclose:
