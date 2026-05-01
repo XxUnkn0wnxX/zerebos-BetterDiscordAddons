@@ -36,26 +36,189 @@ interface SpecManager {
     generateChannelPermissionSpec(channelId: string, guildId: string): PermissionSpecCategory[];
 }
 
+type PermissionId = keyof IDiscordPermissions;
+
 const GuildStore = BdApi.Webpack.Stores.GuildStore;
 const UserStore = BdApi.Webpack.Stores.UserStore;
 const DiscordPermissions = BdApi.Webpack.getModule<IDiscordPermissions>(m => m.ADD_REACTIONS, {searchExports: true})!;
-const specManager = BdApi.Webpack.getByKeys<SpecManager>("generateGuildPermissionSpec");
+const intlModule = BdApi.Webpack.getByKeys<{intl: {string(hash: string): string;}; t: Record<string, string>;}>("intl");
+
+const PermissionStringMap: Partial<Record<PermissionId, string>> = {
+    ADD_REACTIONS: "yEoJAr",
+    ADMINISTRATOR: "PGvZqX",
+    ATTACH_FILES: "3AS4UM",
+    BAN_MEMBERS: "oTBA7N",
+    BYPASS_SLOWMODE: "kqcjeV",
+    CHANGE_NICKNAME: "dilOF6",
+    CONNECT: "S0W8Z5",
+    CREATE_EVENTS: "qyjZua",
+    CREATE_GUILD_EXPRESSIONS: "HarVuP",
+    CREATE_INSTANT_INVITE: "zJrgTG",
+    CREATE_PRIVATE_THREADS: "QwbTSa",
+    CREATE_PUBLIC_THREADS: "25rKnX",
+    DEAFEN_MEMBERS: "9L47Fr",
+    EMBED_LINKS: "969dEL",
+    KICK_MEMBERS: "pBNv6i",
+    MANAGE_CHANNELS: "9qLtWs",
+    MANAGE_EVENTS: "HIgA5a",
+    MANAGE_GUILD_EXPRESSIONS: "bbuXIn",
+    MANAGE_MESSAGES: "6lU9xM",
+    MANAGE_NICKNAMES: "t+Ct5x",
+    MANAGE_ROLES: "C8d+oG",
+    MANAGE_GUILD: "QZRcfO",
+    MANAGE_THREADS: "kEqgr7",
+    MANAGE_WEBHOOKS: "/ADKmM",
+    MENTION_EVERYONE: "Y78KGC",
+    MODERATE_MEMBERS: "+RL6pz",
+    MOVE_MEMBERS: "YtjJPQ",
+    MUTE_MEMBERS: "8EI30/",
+    PIN_MESSAGES: "Y5BI39",
+    PRIORITY_SPEAKER: "BVK71i",
+    READ_MESSAGE_HISTORY: "l9ufaR",
+    REQUEST_TO_SPEAK: "5kicT2",
+    SEND_MESSAGES: "T32rkC",
+    SEND_MESSAGES_IN_THREADS: "fTE74g",
+    SEND_POLLS: "UMQ7Ww",
+    SEND_TTS_MESSAGES: "Mg7bku",
+    SEND_VOICE_MESSAGES: "WlWSBT",
+    SET_VOICE_CHANNEL_STATUS: "VBwkUf",
+    SPEAK: "8w1tIR",
+    STREAM: "FlNoSV",
+    USE_APPLICATION_COMMANDS: "shbR1a",
+    USE_EMBEDDED_ACTIVITIES: "rLSGeh",
+    USE_EXTERNAL_APPS: "3TzAk0",
+    USE_EXTERNAL_EMOJIS: "BpBGZU",
+    USE_EXTERNAL_SOUNDS: "pwaVJ6",
+    USE_EXTERNAL_STICKERS: "UeRs+b",
+    USE_SOUNDBOARD: "Bco7NG",
+    USE_VAD: "08zAV7",
+    VIEW_AUDIT_LOG: "fZgLpA",
+    VIEW_CHANNEL: "W/A4Qp",
+    VIEW_CREATOR_MONETIZATION_ANALYTICS: "0lTLTv",
+    VIEW_GUILD_ANALYTICS: "rQJBE/",
+};
+
+const FallbackPermissionDetails: Partial<Record<PermissionId, {category: string; description: string;}>> = {
+    VIEW_CHANNEL: {category: "General", description: "Allows viewing channels and their contents."},
+    CREATE_INSTANT_INVITE: {category: "General", description: "Allows creating invite links for the server or channel."},
+    MANAGE_CHANNELS: {category: "General", description: "Allows editing channels, categories, and their settings."},
+    MANAGE_ROLES: {category: "General", description: "Allows creating, editing, and assigning roles."},
+    MANAGE_GUILD: {category: "General", description: "Allows changing core server settings."},
+    VIEW_AUDIT_LOG: {category: "General", description: "Allows viewing the server audit log."},
+    VIEW_GUILD_ANALYTICS: {category: "General", description: "Allows viewing server analytics and insights."},
+    VIEW_CREATOR_MONETIZATION_ANALYTICS: {category: "General", description: "Allows viewing creator monetization analytics."},
+    ADMINISTRATOR: {category: "General", description: "Grants every permission and bypasses channel overwrites."},
+    CREATE_GUILD_EXPRESSIONS: {category: "General", description: "Allows creating emojis, stickers, and soundboard sounds."},
+    MANAGE_GUILD_EXPRESSIONS: {category: "General", description: "Allows managing emojis, stickers, and soundboard sounds."},
+    CREATE_EVENTS: {category: "General", description: "Allows creating scheduled events."},
+    MANAGE_EVENTS: {category: "General", description: "Allows editing and deleting scheduled events."},
+    CHANGE_NICKNAME: {category: "Membership", description: "Allows changing your own nickname."},
+    MANAGE_NICKNAMES: {category: "Membership", description: "Allows changing other members' nicknames."},
+    KICK_MEMBERS: {category: "Membership", description: "Allows removing members from the server."},
+    BAN_MEMBERS: {category: "Membership", description: "Allows banning members from the server."},
+    MODERATE_MEMBERS: {category: "Membership", description: "Allows timing out and moderating members."},
+    SEND_MESSAGES: {category: "Text", description: "Allows sending messages in text channels."},
+    SEND_TTS_MESSAGES: {category: "Text", description: "Allows sending text-to-speech messages."},
+    EMBED_LINKS: {category: "Text", description: "Allows sending embeds for supported links."},
+    ATTACH_FILES: {category: "Text", description: "Allows uploading files and images."},
+    ADD_REACTIONS: {category: "Text", description: "Allows adding reactions to messages."},
+    USE_EXTERNAL_EMOJIS: {category: "Text", description: "Allows using emojis from other servers."},
+    USE_EXTERNAL_STICKERS: {category: "Text", description: "Allows using stickers from other servers."},
+    MENTION_EVERYONE: {category: "Text", description: "Allows mentioning @everyone, @here, and all roles."},
+    MANAGE_MESSAGES: {category: "Text", description: "Allows deleting, pinning, and managing messages."},
+    PIN_MESSAGES: {category: "Text", description: "Allows pinning messages in channels."},
+    READ_MESSAGE_HISTORY: {category: "Text", description: "Allows reading message history."},
+    CREATE_PUBLIC_THREADS: {category: "Text", description: "Allows creating public threads."},
+    CREATE_PRIVATE_THREADS: {category: "Text", description: "Allows creating private threads."},
+    SEND_MESSAGES_IN_THREADS: {category: "Text", description: "Allows sending messages inside threads."},
+    MANAGE_THREADS: {category: "Text", description: "Allows renaming, archiving, and deleting threads."},
+    USE_APPLICATION_COMMANDS: {category: "Text", description: "Allows using slash commands and context menu commands."},
+    SEND_VOICE_MESSAGES: {category: "Text", description: "Allows sending voice messages."},
+    SEND_POLLS: {category: "Text", description: "Allows creating polls in supported channels."},
+    BYPASS_SLOWMODE: {category: "Text", description: "Allows sending messages without waiting for slowmode."},
+    MANAGE_WEBHOOKS: {category: "Text", description: "Allows creating and editing webhooks."},
+    CONNECT: {category: "Voice", description: "Allows joining voice channels."},
+    SPEAK: {category: "Voice", description: "Allows speaking in voice channels."},
+    STREAM: {category: "Voice", description: "Allows streaming video or screen share."},
+    USE_VAD: {category: "Voice", description: "Allows using voice activity instead of push-to-talk."},
+    PRIORITY_SPEAKER: {category: "Voice", description: "Allows using priority speaker in voice channels."},
+    MUTE_MEMBERS: {category: "Voice", description: "Allows muting other members in voice channels."},
+    DEAFEN_MEMBERS: {category: "Voice", description: "Allows deafening other members in voice channels."},
+    MOVE_MEMBERS: {category: "Voice", description: "Allows moving members between voice channels."},
+    REQUEST_TO_SPEAK: {category: "Voice", description: "Allows requesting to speak in stage channels."},
+    SET_VOICE_CHANNEL_STATUS: {category: "Voice", description: "Allows changing the status of a voice channel."},
+    USE_SOUNDBOARD: {category: "Voice", description: "Allows using the soundboard."},
+    USE_EXTERNAL_SOUNDS: {category: "Voice", description: "Allows using soundboard sounds from other servers."},
+    USE_EMBEDDED_ACTIVITIES: {category: "Voice", description: "Allows launching embedded voice activities."},
+    USE_EXTERNAL_APPS: {category: "Apps", description: "Allows external apps and app integrations to be used."},
+};
+
+function findSpecManager(): SpecManager | undefined {
+    return BdApi.Webpack.getModule<SpecManager>(
+        (module): module is SpecManager =>
+            typeof module?.generateGuildPermissionSpec === "function" &&
+            typeof module?.generateChannelPermissionSpec === "function",
+        {searchExports: true}
+    );
+}
+
+function humanizePermissionId(permission: string): string {
+    return permission
+        .split("_")
+        .map(part => part[0] + part.slice(1).toLowerCase())
+        .join(" ");
+}
+
+function getPermissionName(permission: PermissionId): string {
+    const hash = PermissionStringMap[permission];
+    if (hash && intlModule?.intl && intlModule.t?.[hash]) {
+        return intlModule.intl.string(intlModule.t[hash]) ?? humanizePermissionId(permission);
+    }
+
+    return humanizePermissionId(permission);
+}
+
+function buildFallbackDefinitions(): PermissionCategoryDefinition[] {
+    const categories = new Map<string, PermissionCategoryDefinition["permissions"]>();
+    const permissionIds = Object.keys(DiscordPermissions) as PermissionId[];
+
+    for (const permission of permissionIds) {
+        const fallback = FallbackPermissionDetails[permission] ?? {
+            category: "Other",
+            description: `Controls ${getPermissionName(permission).toLowerCase()}.`
+        };
+
+        if (!categories.has(fallback.category)) {
+            categories.set(fallback.category, []);
+        }
+
+        categories.get(fallback.category)?.push({
+            id: permission,
+            name: getPermissionName(permission),
+            description: fallback.description
+        });
+    }
+
+    return [...categories.entries()].map(([name, permissions]) => ({name, permissions}));
+}
 
 export function getDefinitions(guildIdOrGuild?: string | Guild): PermissionCategoryDefinition[] {
-    if (!specManager) throw new Error("Permission spec manager not found");
-
     // If no guild is provided, default to the first guild in the sorted guild list
     if (!guildIdOrGuild) guildIdOrGuild = BdApi.Webpack.Stores.SortedGuildStore.getFlattenedGuildIds()[0];
 
     // Get the guild object from the ID if a string was provided
     const guild = typeof guildIdOrGuild === "string" ? BdApi.Webpack.Stores.GuildStore.getGuild(guildIdOrGuild) : guildIdOrGuild;
-    if (!guild) throw new Error("Guild not found");
+    if (!guild) return buildFallbackDefinitions();
+
+    const specManager = findSpecManager();
+    if (!specManager) return buildFallbackDefinitions();
 
     const guildSpecs = specManager.generateGuildPermissionSpec(guild);
+    if (!guildSpecs?.length) return buildFallbackDefinitions();
     return guildSpecs.map(category => ({
         name: category.title,
         permissions: category.permissions.map(perm => ({
-            id: Object.keys(DiscordPermissions).find(key => DiscordPermissions[key as keyof IDiscordPermissions] === perm.flag) ?? "",
+            id: Object.keys(DiscordPermissions).find(key => DiscordPermissions[key as PermissionId] === perm.flag) ?? "",
             name: perm.title,
             description: typeof perm.description === "function" ? perm.description(BdApi.Webpack.Stores.LocaleStore.locale).ast[0] : perm.description[0]
         }))
