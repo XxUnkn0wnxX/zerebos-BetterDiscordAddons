@@ -23,6 +23,7 @@ export interface WithKeyOptions extends FilterOptions {
 export interface Webpack {
     Filters: Filters;
     getModule<T>(filter: FilterFunction, options?: FilterOptions): T | undefined;
+    waitForModule<T>(filter: FilterFunction, options?: FilterOptions): Promise<T>;
     getByKeys<T>(...keys: string[] | [...string[], FilterOptions]): T | undefined;
     getByStrings<T>(...strings: string[] | [...string[], FilterOptions]): T | undefined;
     getByPrototypeKeys<T>(...keys: string[] | [...string[], FilterOptions]): T | undefined;

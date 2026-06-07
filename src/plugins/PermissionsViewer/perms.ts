@@ -39,7 +39,12 @@ interface SpecManager {
 const GuildStore = BdApi.Webpack.Stores.GuildStore;
 const UserStore = BdApi.Webpack.Stores.UserStore;
 const DiscordPermissions = BdApi.Webpack.getModule<IDiscordPermissions>(m => m.ADD_REACTIONS, {searchExports: true})!;
-const specManager = BdApi.Webpack.getByKeys<SpecManager>("generateGuildPermissionSpec");
+let specManager = null as SpecManager | null;
+BdApi.Webpack.waitForModule<SpecManager>(BdApi.Webpack.Filters.byKeys("generateGuildPermissionSpec")).then(mod => {
+    if (!mod) throw new Error("Permission spec manager not found");
+    specManager = mod;
+});
+
 
 export function getDefinitions(guildIdOrGuild?: string | Guild): PermissionCategoryDefinition[] {
     if (!specManager) throw new Error("Permission spec manager not found");
