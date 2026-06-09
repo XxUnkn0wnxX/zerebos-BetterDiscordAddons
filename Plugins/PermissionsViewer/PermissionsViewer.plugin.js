@@ -6978,6 +6978,7 @@ function getPermissionableEntities(guildContext, permTarget) {
 // src/plugins/PermissionsViewer/index.ts
 var { ContextMenu, DOM, Utils, Webpack, UI, ReactUtils } = BdApi;
 var GuildStore2 = Webpack.getStore("GuildStore");
+var SelectedGuildStore = Webpack.getStore("SelectedGuildStore");
 var GuildRoleStore = Webpack.getStore("GuildRoleStore");
 var MemberStore = Webpack.getStore("GuildMemberStore");
 var UserStore2 = Webpack.getStore("UserStore");
@@ -7150,25 +7151,13 @@ var PermissionsViewer = class extends Plugin {
   unbindContextMenus() {
     for (const cancel of this.contextMenuPatches) cancel();
   }
-  resolveGuild(guild, guildId) {
-    return guild ?? (guildId ? GuildStore2?.getGuild(guildId) : void 0);
-  }
-  openPermissionsModal(builder, missingContextMessage = "Discord did not provide enough permission context for this item.") {
-    try {
-      builder();
-    } catch (error) {
-      console.error(`[${this.meta.name}] Failed to open permissions modal`, error);
-      UI.showToast(missingContextMessage, { type: "error" });
-    }
-  }
   patchGuildContextMenu() {
     this.contextMenuPatches.push(ContextMenu.patch("guild-context", (retVal, props) => {
-      const guild = this.resolveGuild(props?.guild, props?.guildId);
-      if (!guild) return retVal;
+      if (!props?.guild) return retVal;
       const newItem = ContextMenu.buildItem({
         label: this.strings.contextMenuLabel,
         action: () => {
-          this.openPermissionsModal(() => this.createModalGuild(guild.name, guild));
+          this.createModalGuild(props.guild.name, props.guild);
         }
       });
       retVal.props.children?.splice(1, 0, newItem);
@@ -7176,17 +7165,11 @@ var PermissionsViewer = class extends Plugin {
   }
   patchChannelContextMenu() {
     this.contextMenuPatches.push(ContextMenu.patch("channel-context", (retVal, props) => {
-      const channel = props?.channel;
-      if (!channel) return retVal;
-      const guild = this.resolveGuild(props?.guild, channel.guild_id ?? props?.guildId);
       const newItem = ContextMenu.buildItem({
         label: this.strings.contextMenuLabel,
         action: () => {
-          if (!guild) {
-            return UI.showToast("Could not resolve the guild for this channel.", { type: "error" });
-          }
-          if (!hasOverwrites(channel)) return UI.showToast(`#${channel.name} has no permission overrides`, { type: "info" });
-          this.openPermissionsModal(() => this.createModalChannel(channel.name, channel, guild));
+          if (!hasOverwrites(props.channel)) return UI.showToast(`#${props.channel.name} has no permission overrides`, { type: "info" });
+          this.createModalChannel(props.channel.name, props.channel, props.guild);
         }
       });
       retVal.props.children?.splice(1, 0, newItem);
@@ -7194,30 +7177,29 @@ var PermissionsViewer = class extends Plugin {
   }
   patchUserContextMenu() {
     this.contextMenuPatches.push(ContextMenu.patch("user-context", (retVal, props) => {
-      const guild = this.resolveGuild(props?.guild, props?.guildId);
-      const userRecord = props?.user;
-      if (!guild || !userRecord) return;
+      const guild = GuildStore2?.getGuild(props.guildId);
+      if (!guild) return;
       const newItem = ContextMenu.buildItem({
         label: this.strings.contextMenuLabel,
         action: () => {
-          const user = MemberStore?.getMember(guild.id, userRecord.id);
+          const user = MemberStore?.getMember(props.guildId, props.user.id);
           if (!user) return;
-          const name = user.nick ? user.nick : userRecord.globalName ?? userRecord.username;
-          this.openPermissionsModal(() => this.createModalUser(name, user, guild));
+          const name = user.nick ? user.nick : props.user.globalName ?? props.user.username;
+          this.createModalUser(name, user, guild);
         }
       });
       retVal?.props?.children?.[0]?.props?.children?.splice(2, 0, newItem);
     }));
   }
   createModalChannel(name, channel, guild) {
-    return this.showModal({ title: `#${name}` }, guild, getPermissionableEntities(guild, channel));
+    return this.showModal({ title: `#${name}` }, getPermissionableEntities(guild, channel));
   }
   createModalUser(name, user, guild) {
     const userInstance = UserStore2?.getUser(user.userId);
     return this.showModal({
       title: name,
       avatarUrl: userInstance?.getAvatarURL(null, 128, true)
-    }, guild, getPermissionableEntities(guild, user));
+    }, getPermissionableEntities(guild, user));
   }
   createModalGuild(name, guild) {
     return this.showModal(
@@ -7225,11 +7207,10 @@ var PermissionsViewer = class extends Plugin {
         title: name,
         avatarUrl: guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.webp?size=128&quality=lossless` : void 0
       },
-      guild,
       getPermissionableEntities(guild, guild)
     );
   }
-  showModal(title, guild, entries) {
+  showModal(title, entries) {
     const svelteMountContainer = document.createElement("div");
     svelteMountContainer.style.display = "contents";
     const temp = mount(PermissionViewerModal, {
@@ -7242,7 +7223,7 @@ var PermissionsViewer = class extends Plugin {
         onClose: () => {
           svelteMountContainer.remove();
         },
-        categories: getDefinitions(guild),
+        categories: getDefinitions(SelectedGuildStore?.getGuildId() ?? ""),
         showNeutral: this.settings.showNeutral,
         onToggleShowNeutral: (value) => {
           this.settings.showNeutral = value;
