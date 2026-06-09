@@ -87,9 +87,10 @@ jobs:
           git checkout master
           git pull --ff-only origin master
 
-          plugin_files=(Plugins/*/*.plugin.js)
+          mapfile -t plugin_files < <(git ls-tree -r --name-only origin/develop -- Plugins | grep -E '^Plugins/[^/]+/[^/]+\.plugin\.js$' || true)
+          git rm -q --ignore-unmatch Plugins/*/*.plugin.js
           git checkout origin/develop -- "${plugin_files[@]}"
-          git add "${plugin_files[@]}"
+          git add Plugins
 
           if git diff --cached --quiet; then
             echo "No generated plugin changes for master."
