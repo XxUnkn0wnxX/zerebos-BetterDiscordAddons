@@ -51,11 +51,11 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/plugins/HideDisabledEmojis/index.ts
-var HideDisabledEmojis_exports = {};
-__export(HideDisabledEmojis_exports, {
+var index_exports = {};
+__export(index_exports, {
   default: () => HideDisabledEmojis
 });
-module.exports = __toCommonJS(HideDisabledEmojis_exports);
+module.exports = __toCommonJS(index_exports);
 
 // src/common/plugin.ts
 var Plugin = class {

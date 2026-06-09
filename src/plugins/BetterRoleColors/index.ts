@@ -1,13 +1,13 @@
-import {Component, ReactElement} from "react";
+import type {Component, ReactElement} from "react";
 
 import Plugin from "@common/plugin";
 import formatString from "@common/formatstring";
 import suppressErrors from "@common/suppress";
 
-import {Meta} from "@betterdiscord/meta";
+import type {Meta} from "@betterdiscord/meta";
 
-import {Channel, Guild, GuildMember, GuildRole, PermissionOverwrite, User} from "@discord";
-import {ClassModule, DiscordPermissions as IDiscordPermissions} from "@discord/modules";
+import type {Channel, Guild, GuildMember, GuildRole, PermissionOverwrite, User} from "@discord";
+import type {ClassModule, DiscordPermissions as IDiscordPermissions} from "@discord/modules";
 
 import Config from "./config";
 

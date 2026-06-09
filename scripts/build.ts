@@ -67,16 +67,19 @@ async function buildConfig() {
     // Forcibly use UUID to make sure there's no import caching issues
     const configTempFile = path.join(releasePath, `${crypto.randomUUID()}.config.js`);
 
-    // Temporarily build the config
-    await esbuild.build({
-        entryPoints: [configPath],
-        outfile: configTempFile,
-    });
+    try {
+        // Temporarily build the config
+        await esbuild.build({
+            entryPoints: [configPath],
+            outfile: configTempFile,
+        });
 
-    // Import in the result and remove the temp file
-    const config = (await import("file://" + configTempFile)).default;
-    fs.rmSync(configTempFile);
-    return config;
+        // Import in the result and remove the temp file
+        return (await import("file://" + configTempFile)).default;
+    }
+    finally {
+        if (fs.existsSync(configTempFile)) fs.rmSync(configTempFile);
+    }
 }
 
 async function buildPlugin() {
@@ -133,4 +136,7 @@ async function buildPlugin() {
     else await ctx.dispose();
 }
 
-buildPlugin().catch(console.error);
+buildPlugin().catch(error => {
+    console.error(error);
+    process.exit(1);
+});

@@ -1,12 +1,12 @@
-import {Component, ReactElement} from "react";
+import type {Component, ReactElement} from "react";
 
 import Plugin from "@common/plugin";
 import formatString from "@common/formatstring";
 
-import {Meta} from "@betterdiscord/meta";
+import type {Meta} from "@betterdiscord/meta";
 
-import {Channel} from "@discord";
-import {ClassModule, FluxStore} from "@discord/modules";
+import type {Channel} from "@discord";
+import type {ClassModule, FluxStore} from "@discord/modules";
 
 import Config from "./config";
 

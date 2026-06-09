@@ -61,11 +61,11 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/plugins/BlurNSFW/index.ts
-var BlurNSFW_exports = {};
-__export(BlurNSFW_exports, {
+var index_exports = {};
+__export(index_exports, {
   default: () => BlurMedia
 });
-module.exports = __toCommonJS(BlurNSFW_exports);
+module.exports = __toCommonJS(index_exports);
 
 // src/common/plugin.ts
 var Plugin = class {
@@ -76,7 +76,7 @@ var Plugin = class {
   LocaleManager;
   get strings() {
     if (!this.manifest.strings) return {};
-    const locale = this.LocaleManager?.getLocale().split("-")[0] ?? "en";
+    const locale = this.LocaleManager?.locale.split("-")[0] ?? "en";
     if (this.manifest.strings.hasOwnProperty(locale)) return this.manifest.strings[locale];
     if (this.manifest.strings.hasOwnProperty("en")) return this.manifest.strings.en;
     return this.manifest.strings;
@@ -104,7 +104,7 @@ var Plugin = class {
       this.#showChangelog();
       BdApi.Data.save(this.meta.name, "version", this.meta.version);
     }
-    if (this.manifest.strings) this.LocaleManager = BdApi.Webpack.getModule((m) => m?.Messages && Object.keys(m?.Messages).length > 0);
+    if (this.manifest.strings) this.LocaleManager = BdApi.Webpack.getByKeys("locale", "initialize");
     if (this.manifest.config && !this.getSettingsPanel) {
       this.getSettingsPanel = () => {
         this.#updateConfig();
@@ -170,12 +170,15 @@ var Plugin = class {
 };
 
 // src/common/formatstring.ts
-function formatString(stringToFormat, values) {
-  for (const val in values) {
-    let replacement = values[val];
-    if (Array.isArray(replacement)) replacement = JSON.stringify(replacement);
-    if (typeof replacement === "object" && replacement !== null) replacement = replacement.toString();
-    stringToFormat = stringToFormat.replace(new RegExp(`{{${val}}}`, "g"), replacement.toString());
+function formatString(stringToFormat, ...replacements) {
+  for (let v = 0; v < replacements.length; v++) {
+    const values = replacements[v];
+    for (const val in values) {
+      let replacement = values[val];
+      if (Array.isArray(replacement)) replacement = JSON.stringify(replacement);
+      if (typeof replacement === "object" && replacement !== null) replacement = replacement.toString();
+      stringToFormat = stringToFormat.replace(new RegExp(`{{${val}}}`, "g"), replacement.toString());
+    }
   }
   return stringToFormat;
 }

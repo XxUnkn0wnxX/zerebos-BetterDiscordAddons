@@ -50,14 +50,14 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/HideIconBadge/index.ts
-var HideIconBadge_exports = {};
-__export(HideIconBadge_exports, {
+// src/plugins/HideIconBadge/index.ts
+var index_exports = {};
+__export(index_exports, {
   default: () => HideIconBadge
 });
-module.exports = __toCommonJS(HideIconBadge_exports);
+module.exports = __toCommonJS(index_exports);
 
-// src/base.ts
+// src/common/plugin.ts
 var Plugin = class {
   meta;
   manifest;
@@ -66,7 +66,7 @@ var Plugin = class {
   LocaleManager;
   get strings() {
     if (!this.manifest.strings) return {};
-    const locale = this.LocaleManager?.getLocale().split("-")[0] ?? "en";
+    const locale = this.LocaleManager?.locale.split("-")[0] ?? "en";
     if (this.manifest.strings.hasOwnProperty(locale)) return this.manifest.strings[locale];
     if (this.manifest.strings.hasOwnProperty("en")) return this.manifest.strings.en;
     return this.manifest.strings;
@@ -94,9 +94,10 @@ var Plugin = class {
       this.#showChangelog();
       BdApi.Data.save(this.meta.name, "version", this.meta.version);
     }
-    if (this.manifest.strings) this.LocaleManager = BdApi.Webpack.getModule((m) => m?.Messages && Object.keys(m?.Messages).length > 0);
-    if (this.manifest.config) {
+    if (this.manifest.strings) this.LocaleManager = BdApi.Webpack.getByKeys("locale", "initialize");
+    if (this.manifest.config && !this.getSettingsPanel) {
       this.getSettingsPanel = () => {
+        this.#updateConfig();
         return BdApi.UI.buildSettingsPanel({
           onChange: (_, id, value) => {
             this.settings[id] = value;
@@ -131,9 +132,22 @@ var Plugin = class {
     BdApi.Data.save(this.meta.name, "settings", this.settings);
   }
   loadSettings() {
-    return BdApi.Utils.extend({}, BdApi.Data.load(this.meta.name, "settings"), this.defaultSettings ?? {});
+    return BdApi.Utils.extend({}, this.defaultSettings ?? {}, BdApi.Data.load(this.meta.name, "settings"));
+  }
+  #updateConfig() {
+    if (!this.manifest.config) return;
+    for (const setting of this.manifest.config) {
+      if (setting.type !== "category") {
+        setting.value = this.settings[setting.id] ?? setting.value;
+      } else {
+        for (const subsetting of setting.settings) {
+          subsetting.value = this.settings[subsetting.id] ?? subsetting.value;
+        }
+      }
+    }
   }
   buildSettingsPanel(onChange) {
+    this.#updateConfig();
     return BdApi.UI.buildSettingsPanel({
       onChange: (groupId, id, value) => {
         this.settings[id] = value;
@@ -145,7 +159,7 @@ var Plugin = class {
   }
 };
 
-// src/HideIconBadge/config.ts
+// src/plugins/HideIconBadge/config.ts
 var manifest = {
   info: {
     name: "HideIconBadge",
@@ -167,7 +181,7 @@ var manifest = {
 };
 var config_default = manifest;
 
-// src/HideIconBadge/index.ts
+// src/plugins/HideIconBadge/index.ts
 var ElectronModule = BdApi.Webpack.getByKeys("setBadge");
 var HideIconBadge = class extends Plugin {
   constructor(meta) {

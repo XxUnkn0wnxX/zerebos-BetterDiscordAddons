@@ -1,16 +1,16 @@
 import Plugin from "@common/plugin";
 
-import {Meta} from "@betterdiscord/meta";
+import type {Meta} from "@betterdiscord/meta";
 
 import Config from "./config";
 import ToolbarData from "./toolbar";
 import Languages from "./languages";
 import CSS from "./styles.css";
 import ToolbarHTML from "./toolbar.html";
-import {SettingGroup} from "@betterdiscord/api/ui";
-import {Component, RefObject} from "react";
-import {Message} from "@discord";
-import {ClassModule} from "@discord/modules";
+import type {SettingGroup} from "@betterdiscord/api/ui";
+import type {Component, RefObject} from "react";
+import type {Message} from "@discord";
+import type {ClassModule} from "@discord/modules";
 
 
 

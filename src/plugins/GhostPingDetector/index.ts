@@ -1,11 +1,11 @@
 import Plugin from "@common/plugin";
 
-import {Meta} from "@betterdiscord/meta";
+import type {Meta} from "@betterdiscord/meta";
 
-import {Channel, Message, User} from "@discord";
+import type {Channel, Message, User} from "@discord";
 
 import Config from "./config";
-import {Dispatcher as IDispatcher} from "@discord/modules";
+import type {Dispatcher as IDispatcher} from "@discord/modules";
 
 
 const {Logger, Patcher, Webpack} = BdApi;

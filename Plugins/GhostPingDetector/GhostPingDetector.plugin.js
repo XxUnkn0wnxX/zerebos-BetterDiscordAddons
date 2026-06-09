@@ -1,16 +1,16 @@
 /**
- * @name DoNotTrack
- * @description Stops Discord from tracking everything you do like Sentry and Analytics.
- * @version 0.1.0
+ * @name GhostPingDetector
+ * @description Detects ghost pings.
+ * @version 0.0.1
  * @author Zerebos
  * @authorId 249746236008169473
- * @website https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/DoNotTrack
- * @source https://raw.githubusercontent.com/zerebos/BetterDiscordAddons/master/Plugins/DoNotTrack/DoNotTrack.plugin.js
+ * @website https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/GhostPingDetector
+ * @source https://raw.githubusercontent.com/zerebos/BetterDiscordAddons/master/Plugins/GhostPingDetector/GhostPingDetector.plugin.js
  */
 
 /*@cc_on
 @if (@_jscript)
-    
+
     // Offer to self-install for clueless users that try to run this directly.
     var shell = WScript.CreateObject("WScript.Shell");
     var fs = new ActiveXObject("Scripting.FileSystemObject");
@@ -50,10 +50,10 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/plugins/DoNotTrack/index.ts
+// src/plugins/GhostPingDetector/index.ts
 var index_exports = {};
 __export(index_exports, {
-  default: () => DoNotTrack
+  default: () => GhostPingDetector
 });
 module.exports = __toCommonJS(index_exports);
 
@@ -159,118 +159,60 @@ var Plugin = class {
   }
 };
 
-// src/plugins/DoNotTrack/config.ts
+// src/plugins/GhostPingDetector/config.ts
 var manifest = {
   info: {
-    name: "DoNotTrack",
+    name: "GhostPingDetector",
     authors: [{
       name: "Zerebos",
       discord_id: "249746236008169473",
       github_username: "zerebos",
       twitter_username: "IAmZerebos"
     }],
-    version: "0.1.0",
-    description: "Stops Discord from tracking everything you do like Sentry and Analytics.",
-    github: "https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/DoNotTrack",
-    github_raw: "https://raw.githubusercontent.com/zerebos/BetterDiscordAddons/master/Plugins/DoNotTrack/DoNotTrack.plugin.js"
+    version: "0.0.1",
+    description: "Detects ghost pings.",
+    github: "https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/GhostPingDetector",
+    github_raw: "https://raw.githubusercontent.com/zerebos/BetterDiscordAddons/master/Plugins/GhostPingDetector/GhostPingDetector.plugin.js"
   },
-  changelog: [
-    {
-      title: "What's New?",
-      type: "added",
-      items: [
-        "Plugin no longer relies on ZeresPluginLibrary!",
-        "DoNotTrack should be more resilient to Discord's changes."
-      ]
-    },
-    {
-      title: "Fixes",
-      type: "fixed",
-      items: [
-        "Fixed startup issues.",
-        "Hopefully fixed issues with the process monitor."
-      ]
-    }
-  ],
-  main: "index.ts",
-  config: [
-    {
-      type: "switch",
-      id: "stopProcessMonitor",
-      name: "Stop Process Monitor",
-      note: "This setting stops Discord from monitoring the processes on your PC and prevents your currently played game from showing.",
-      value: true
-    }
-  ]
+  main: "index.ts"
 };
 var config_default = manifest;
 
-// src/plugins/DoNotTrack/index.ts
-var { Patcher, Webpack, UI } = BdApi;
-var SettingsManager = Webpack.getModule((m) => m?.updateAsync && m?.type === 1, { searchExports: true });
-var BoolSetting = Webpack.getModule((m) => m?.typeName?.includes("Bool"), { searchExports: true });
-var Analytics = Webpack.getByKeys("AnalyticEventConfigs");
-var NativeModule = Webpack.getByKeys("getDiscordUtils");
-var DoNotTrack = class extends Plugin {
+// src/plugins/GhostPingDetector/index.ts
+var { Logger, Patcher, Webpack } = BdApi;
+var MessageStore = Webpack.getStore("MessageStore");
+var UserStore = Webpack.getStore("UserStore");
+var ChannelStore = Webpack.getStore("ChannelStore");
+var ImageResolver = Webpack.getByKeys("getUserAvatarURL", "getGuildIconURL");
+var Dispatcher = Webpack.getByKeys("dispatch", "subscribe");
+var GhostPingDetector = class extends Plugin {
   constructor(meta) {
     super(meta, config_default);
   }
   onStart() {
-    if (Analytics) {
-      Patcher.instead(this.meta.name, Analytics.default, "track", () => {
-      });
-    }
-    if (NativeModule) {
-      Patcher.instead(this.meta.name, NativeModule, "ensureModule", (_, [moduleName], originalFunction) => {
-        if (moduleName?.includes("discord_rpc")) return;
-        return originalFunction(moduleName);
-      });
-    }
-    window?.__SENTRY__?.globalEventProcessors?.splice(0, window?.__SENTRY__?.globalEventProcessors?.length);
-    window?.__SENTRY__?.logger?.disable();
-    const SentryHub = window.DiscordSentry?.getCurrentHub?.();
-    if (SentryHub) {
-      SentryHub.getClient()?.close?.(0);
-      const scope = SentryHub.getScope();
-      scope?.clear?.();
-      scope?.setFingerprint?.(null);
-      SentryHub?.setUser(null);
-      SentryHub?.setTags({});
-      SentryHub?.setExtras({});
-      SentryHub?.endSession();
-    }
-    for (const method in console) {
-      if (!Object.hasOwn(console[method], "__sentry_original__")) continue;
-      console[method] = console[method].__sentry_original__;
-    }
-    if (this.settings.stopProcessMonitor) this.disableProcessMonitor();
+    if (!Dispatcher) return Logger.error(this.meta.name, "Could not locate Dispatcher!");
+    Patcher.before(this.meta.name, Dispatcher, "dispatch", (_, args) => {
+      const event = args[0];
+      if (!event || !event.type || event.type !== "MESSAGE_DELETE") return;
+      const message = MessageStore?.getMessage(event.channelId, event.id);
+      if (!message) return false;
+      if (message.mentioned) {
+        const user = UserStore?.getUser(message.author.id);
+        if (!user) return false;
+        const icon = ImageResolver?.getUserAvatarURL(user);
+        const channel = ChannelStore?.getChannel(event.channelId);
+        const body = `New ghost ping by ${user.tag} in #${channel?.name ?? "Unknown"}.`;
+        const onclick = () => {
+          Logger.info(this.meta.name, message);
+        };
+        const notification = new Notification("Ghost Ping", { body, icon, requireInteraction: true });
+        notification.onclick = onclick;
+      }
+      return false;
+    });
   }
   onStop() {
     Patcher.unpatchAll(this.meta.name);
-  }
-  disableProcessMonitor() {
-    SettingsManager?.updateAsync("status", (settings) => settings.showCurrentGame = BoolSetting?.create({ value: false }), 0);
-    const DiscordUtils = NativeModule?.getDiscordUtils();
-    if (!DiscordUtils) return UI.alert("DoNotTrack", "Unable to disable process monitor!");
-    DiscordUtils.setObservedGamesCallback([], () => {
-    });
-    Patcher.instead(this.meta.name, DiscordUtils, "setObservedGamesCallback", () => {
-    });
-  }
-  enableProcessMonitor() {
-    SettingsManager?.updateAsync("status", (settings) => settings.showCurrentGame = BoolSetting?.create({ value: true }), 0);
-    UI.showConfirmationModal("Reload Discord?", "To reenable the process monitor Discord needs to be reloaded.", {
-      confirmText: "Reload",
-      cancelText: "Later",
-      onConfirm: () => window.location.reload()
-    });
-  }
-  getSettingsPanel() {
-    return this.buildSettingsPanel((_, id, value) => {
-      if (id !== "stopProcessMonitor") return;
-      if (value) return this.disableProcessMonitor();
-      return this.enableProcessMonitor();
-    });
   }
 };
 

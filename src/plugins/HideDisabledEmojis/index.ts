@@ -1,13 +1,13 @@
-import {FunctionComponent, MemoExoticComponent} from "react";
+import type {FunctionComponent, MemoExoticComponent} from "react";
 
 import Plugin from "@common/plugin";
 
-import {Meta} from "@betterdiscord/meta";
+import type {Meta} from "@betterdiscord/meta";
 
-import {Memo} from "@discord/modules";
+import type {Memo} from "@discord/modules";
 
 import Config from "./config";
-import {Channel, Guild} from "@discord";
+import type {Channel, Guild} from "@discord";
 
 
 const {Patcher, Webpack, Logger, Utils} = BdApi;

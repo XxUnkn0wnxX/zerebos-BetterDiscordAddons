@@ -1,5 +1,5 @@
 import Plugin from "@common/plugin";
-import {Meta} from "@betterdiscord/meta";
+import type {Meta} from "@betterdiscord/meta";
 import Config from "./config";
 
 
