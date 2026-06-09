@@ -148,9 +148,9 @@ export default class PermissionsViewer extends Plugin {
     }
 
     patchPopouts(e: MutationRecord) {
-        const popoutMount = (props: {displayProfile: {guildId: string;}; user: User;}) => {
+        const popoutMount = (popout: HTMLDivElement, props: {displayProfile: {guildId: string;}; user: User;}) => {
             if (!props || !props.displayProfile || !props.user) return;
-            const popout = document.querySelector<HTMLDivElement>(`[class*="userPopout_"], [class*="outer_"]`);
+            // const popout = document.querySelector<HTMLDivElement>(`[class*="userPopout_"], [class*="outer_"]`);
             if (!popout || popout.querySelector("#permissions-popout")) return;
             const user = MemberStore?.getMember(props.displayProfile.guildId, props.user.id);
             const guild = GuildStore?.getGuild(props.displayProfile.guildId);
@@ -167,6 +167,9 @@ export default class PermissionsViewer extends Plugin {
 
             const referenceRoles = getRoles(guild);
             if (!referenceRoles) return;
+
+            // console.log("Reference roles:", referenceRoles);
+            // console.log("Calculating permissions for roles", userRoles.map(r => referenceRoles[r]?.name ?? r));
             for (let r = 0; r < userRoles.length; r++) {
                 const role = userRoles[r];
                 if (!referenceRoles[role]) continue;
@@ -195,9 +198,14 @@ export default class PermissionsViewer extends Plugin {
                 this.createModalUser(name, user, guild);
             });
 
+            // await new Promise(resolve => setTimeout(resolve, 100)); // Wait for the popout to render
+
             let roleList = popout.querySelector<HTMLDivElement>(`[class*="roleList"]`);
+            // console.log("popout list element:", popout);
             if (roleList?.parentElement?.className.includes("section")) roleList = roleList.parentElement as HTMLDivElement;
             roleList?.after(permBlock);
+
+            // console.log(roleList, permBlock);
 
             const popoutInstance = Utils.findInTree<Component & {updatePosition(): void; props: {targetRef: {current: HTMLElement | null;};};}>(
                 ReactUtils.getInternalInstance(popout),
@@ -215,7 +223,7 @@ export default class PermissionsViewer extends Plugin {
         if (!popout || !popout.matches(`[class*="userPopout_"], [class*="outer_"]`)) return;
         // console.log("Popout detected, patching...", popout);
         const props = Utils.findInTree<{displayProfile: {guildId: string;}; user: User;}>(ReactUtils.getInternalInstance(popout), (m: {user?: User;}) => m && m.user, {walkable: ["memoizedProps", "return"]});
-        popoutMount(props);
+        popoutMount(popout, props);
     }
 
     bindPopouts() {

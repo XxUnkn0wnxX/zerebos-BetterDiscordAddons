@@ -1,7 +1,7 @@
 /**
  * @name PermissionsViewer
  * @description Allows you to view all the permissions for users, servers, and channels!
- * @version 1.0.0
+ * @version 1.0.1
  * @author Zerebos
  * @authorId 249746236008169473
  * @website https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/PermissionsViewer
@@ -183,37 +183,21 @@ var manifest = {
       github_username: "zerebos",
       twitter_username: "IAmZerebos"
     }],
-    version: "1.0.0",
+    version: "1.0.1",
     description: "Allows you to view all the permissions for users, servers, and channels!",
     github: "https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/PermissionsViewer",
     github_raw: "https://raw.githubusercontent.com/zerebos/BetterDiscordAddons/master/Plugins/PermissionsViewer/PermissionsViewer.plugin.js"
   },
   changelog: {
-    banner: "https://github.com/user-attachments/assets/a9cd5ef8-35fa-446e-8839-1b9cb1dc8962",
-    blurb: "It took me a long time but I finally sat down and rewrote the entire plugin to be more efficient, better looking, and more accurate. If you had issues with the old version, please give this one a try!",
+    // banner: "https://github.com/user-attachments/assets/a9cd5ef8-35fa-446e-8839-1b9cb1dc8962",
+    blurb: "Sorry for the delay in fixing, but I wanted to wait for the underlying issue to be fixed in Discord's code instead of patching around it. This update should fix all the issues with permissions showing up incorrectly and not showing up in popouts.",
     changes: [
       {
-        type: "added",
-        title: "Total Rewrite!",
-        items: [
-          "Switched from using stinky virgin React to based chad Svelte.",
-          "Completely revamped the UI to be more user friendly and look better.",
-          "Improved performance and reduced memory usage.",
-          'Users now have an "Effective Permissions" section that shows their overall permissions.',
-          "Roles and permissions are now searchable to make finding specific permissions easier.",
-          "Channel overwrites now make user and role overwrites more clear and easier to understand.",
-          "Added support for role icons and emojis.",
-          "Neutral permissions can now be toggled either in settings or in the modal itself."
-        ]
-      },
-      {
-        title: "Also Some Fixes",
+        title: "What's Fixed?",
         type: "fixed",
         items: [
-          "Permission badges in popouts now show up properly.",
-          "Improved accuracy of permission calculations.",
-          "Fixed an issue where some permissions would show up as denied when they were actually neutral.",
-          "Roles and permissions are now sorted by position instead of alphabetically."
+          "Permissions should appear in popouts again.",
+          "Context menu entries should show the modal when clicked."
         ]
       }
     ]
@@ -7185,158 +7169,17 @@ function PermissionViewerModal($$anchor, $$props) {
 var GuildStore = BdApi.Webpack.Stores.GuildStore;
 var UserStore = BdApi.Webpack.Stores.UserStore;
 var DiscordPermissions = BdApi.Webpack.getModule((m) => m.ADD_REACTIONS, { searchExports: true });
-var intlModule = BdApi.Webpack.getByKeys("intl");
-var PermissionStringMap = {
-  ADD_REACTIONS: "yEoJAr",
-  ADMINISTRATOR: "PGvZqX",
-  ATTACH_FILES: "3AS4UM",
-  BAN_MEMBERS: "oTBA7N",
-  BYPASS_SLOWMODE: "kqcjeV",
-  CHANGE_NICKNAME: "dilOF6",
-  CONNECT: "S0W8Z5",
-  CREATE_EVENTS: "qyjZua",
-  CREATE_GUILD_EXPRESSIONS: "HarVuP",
-  CREATE_INSTANT_INVITE: "zJrgTG",
-  CREATE_PRIVATE_THREADS: "QwbTSa",
-  CREATE_PUBLIC_THREADS: "25rKnX",
-  DEAFEN_MEMBERS: "9L47Fr",
-  EMBED_LINKS: "969dEL",
-  KICK_MEMBERS: "pBNv6i",
-  MANAGE_CHANNELS: "9qLtWs",
-  MANAGE_EVENTS: "HIgA5a",
-  MANAGE_GUILD_EXPRESSIONS: "bbuXIn",
-  MANAGE_MESSAGES: "6lU9xM",
-  MANAGE_NICKNAMES: "t+Ct5x",
-  MANAGE_ROLES: "C8d+oG",
-  MANAGE_GUILD: "QZRcfO",
-  MANAGE_THREADS: "kEqgr7",
-  MANAGE_WEBHOOKS: "/ADKmM",
-  MENTION_EVERYONE: "Y78KGC",
-  MODERATE_MEMBERS: "+RL6pz",
-  MOVE_MEMBERS: "YtjJPQ",
-  MUTE_MEMBERS: "8EI30/",
-  PIN_MESSAGES: "Y5BI39",
-  PRIORITY_SPEAKER: "BVK71i",
-  READ_MESSAGE_HISTORY: "l9ufaR",
-  REQUEST_TO_SPEAK: "5kicT2",
-  SEND_MESSAGES: "T32rkC",
-  SEND_MESSAGES_IN_THREADS: "fTE74g",
-  SEND_POLLS: "UMQ7Ww",
-  SEND_TTS_MESSAGES: "Mg7bku",
-  SEND_VOICE_MESSAGES: "WlWSBT",
-  SET_VOICE_CHANNEL_STATUS: "VBwkUf",
-  SPEAK: "8w1tIR",
-  STREAM: "FlNoSV",
-  USE_APPLICATION_COMMANDS: "shbR1a",
-  USE_EMBEDDED_ACTIVITIES: "rLSGeh",
-  USE_EXTERNAL_APPS: "3TzAk0",
-  USE_EXTERNAL_EMOJIS: "BpBGZU",
-  USE_EXTERNAL_SOUNDS: "pwaVJ6",
-  USE_EXTERNAL_STICKERS: "UeRs+b",
-  USE_SOUNDBOARD: "Bco7NG",
-  USE_VAD: "08zAV7",
-  VIEW_AUDIT_LOG: "fZgLpA",
-  VIEW_CHANNEL: "W/A4Qp",
-  VIEW_CREATOR_MONETIZATION_ANALYTICS: "0lTLTv",
-  VIEW_GUILD_ANALYTICS: "rQJBE/"
-};
-var FallbackPermissionDetails = {
-  VIEW_CHANNEL: { category: "General", description: "Allows viewing channels and their contents." },
-  CREATE_INSTANT_INVITE: { category: "General", description: "Allows creating invite links for the server or channel." },
-  MANAGE_CHANNELS: { category: "General", description: "Allows editing channels, categories, and their settings." },
-  MANAGE_ROLES: { category: "General", description: "Allows creating, editing, and assigning roles." },
-  MANAGE_GUILD: { category: "General", description: "Allows changing core server settings." },
-  VIEW_AUDIT_LOG: { category: "General", description: "Allows viewing the server audit log." },
-  VIEW_GUILD_ANALYTICS: { category: "General", description: "Allows viewing server analytics and insights." },
-  VIEW_CREATOR_MONETIZATION_ANALYTICS: { category: "General", description: "Allows viewing creator monetization analytics." },
-  ADMINISTRATOR: { category: "General", description: "Grants every permission and bypasses channel overwrites." },
-  CREATE_GUILD_EXPRESSIONS: { category: "General", description: "Allows creating emojis, stickers, and soundboard sounds." },
-  MANAGE_GUILD_EXPRESSIONS: { category: "General", description: "Allows managing emojis, stickers, and soundboard sounds." },
-  CREATE_EVENTS: { category: "General", description: "Allows creating scheduled events." },
-  MANAGE_EVENTS: { category: "General", description: "Allows editing and deleting scheduled events." },
-  CHANGE_NICKNAME: { category: "Membership", description: "Allows changing your own nickname." },
-  MANAGE_NICKNAMES: { category: "Membership", description: "Allows changing other members' nicknames." },
-  KICK_MEMBERS: { category: "Membership", description: "Allows removing members from the server." },
-  BAN_MEMBERS: { category: "Membership", description: "Allows banning members from the server." },
-  MODERATE_MEMBERS: { category: "Membership", description: "Allows timing out and moderating members." },
-  SEND_MESSAGES: { category: "Text", description: "Allows sending messages in text channels." },
-  SEND_TTS_MESSAGES: { category: "Text", description: "Allows sending text-to-speech messages." },
-  EMBED_LINKS: { category: "Text", description: "Allows sending embeds for supported links." },
-  ATTACH_FILES: { category: "Text", description: "Allows uploading files and images." },
-  ADD_REACTIONS: { category: "Text", description: "Allows adding reactions to messages." },
-  USE_EXTERNAL_EMOJIS: { category: "Text", description: "Allows using emojis from other servers." },
-  USE_EXTERNAL_STICKERS: { category: "Text", description: "Allows using stickers from other servers." },
-  MENTION_EVERYONE: { category: "Text", description: "Allows mentioning @everyone, @here, and all roles." },
-  MANAGE_MESSAGES: { category: "Text", description: "Allows deleting, pinning, and managing messages." },
-  PIN_MESSAGES: { category: "Text", description: "Allows pinning messages in channels." },
-  READ_MESSAGE_HISTORY: { category: "Text", description: "Allows reading message history." },
-  CREATE_PUBLIC_THREADS: { category: "Text", description: "Allows creating public threads." },
-  CREATE_PRIVATE_THREADS: { category: "Text", description: "Allows creating private threads." },
-  SEND_MESSAGES_IN_THREADS: { category: "Text", description: "Allows sending messages inside threads." },
-  MANAGE_THREADS: { category: "Text", description: "Allows renaming, archiving, and deleting threads." },
-  USE_APPLICATION_COMMANDS: { category: "Text", description: "Allows using slash commands and context menu commands." },
-  SEND_VOICE_MESSAGES: { category: "Text", description: "Allows sending voice messages." },
-  SEND_POLLS: { category: "Text", description: "Allows creating polls in supported channels." },
-  BYPASS_SLOWMODE: { category: "Text", description: "Allows sending messages without waiting for slowmode." },
-  MANAGE_WEBHOOKS: { category: "Text", description: "Allows creating and editing webhooks." },
-  CONNECT: { category: "Voice", description: "Allows joining voice channels." },
-  SPEAK: { category: "Voice", description: "Allows speaking in voice channels." },
-  STREAM: { category: "Voice", description: "Allows streaming video or screen share." },
-  USE_VAD: { category: "Voice", description: "Allows using voice activity instead of push-to-talk." },
-  PRIORITY_SPEAKER: { category: "Voice", description: "Allows using priority speaker in voice channels." },
-  MUTE_MEMBERS: { category: "Voice", description: "Allows muting other members in voice channels." },
-  DEAFEN_MEMBERS: { category: "Voice", description: "Allows deafening other members in voice channels." },
-  MOVE_MEMBERS: { category: "Voice", description: "Allows moving members between voice channels." },
-  REQUEST_TO_SPEAK: { category: "Voice", description: "Allows requesting to speak in stage channels." },
-  SET_VOICE_CHANNEL_STATUS: { category: "Voice", description: "Allows changing the status of a voice channel." },
-  USE_SOUNDBOARD: { category: "Voice", description: "Allows using the soundboard." },
-  USE_EXTERNAL_SOUNDS: { category: "Voice", description: "Allows using soundboard sounds from other servers." },
-  USE_EMBEDDED_ACTIVITIES: { category: "Voice", description: "Allows launching embedded voice activities." },
-  USE_EXTERNAL_APPS: { category: "Apps", description: "Allows external apps and app integrations to be used." }
-};
-function findSpecManager() {
-  return BdApi.Webpack.getModule(
-    (module2) => typeof module2?.generateGuildPermissionSpec === "function" && typeof module2?.generateChannelPermissionSpec === "function",
-    { searchExports: true }
-  );
-}
-function humanizePermissionId(permission) {
-  return permission.split("_").map((part) => part[0] + part.slice(1).toLowerCase()).join(" ");
-}
-function getPermissionName(permission) {
-  const hash2 = PermissionStringMap[permission];
-  if (hash2 && intlModule?.intl && intlModule.t?.[hash2]) {
-    return intlModule.intl.string(intlModule.t[hash2]) ?? humanizePermissionId(permission);
-  }
-  return humanizePermissionId(permission);
-}
-function buildFallbackDefinitions() {
-  const categories = /* @__PURE__ */ new Map();
-  const permissionIds = Object.keys(DiscordPermissions);
-  for (const permission of permissionIds) {
-    const fallback2 = FallbackPermissionDetails[permission] ?? {
-      category: "Other",
-      description: `Controls ${getPermissionName(permission).toLowerCase()}.`
-    };
-    if (!categories.has(fallback2.category)) {
-      categories.set(fallback2.category, []);
-    }
-    categories.get(fallback2.category)?.push({
-      id: permission,
-      name: getPermissionName(permission),
-      description: fallback2.description
-    });
-  }
-  return [...categories.entries()].map(([name, permissions]) => ({ name, permissions }));
-}
+var specManager = null;
+BdApi.Webpack.waitForModule(BdApi.Webpack.Filters.byKeys("generateGuildPermissionSpec")).then((mod) => {
+  if (!mod) throw new Error("Permission spec manager not found");
+  specManager = mod;
+});
 function getDefinitions(guildIdOrGuild) {
+  if (!specManager) throw new Error("Permission spec manager not found");
   if (!guildIdOrGuild) guildIdOrGuild = BdApi.Webpack.Stores.SortedGuildStore.getFlattenedGuildIds()[0];
   const guild = typeof guildIdOrGuild === "string" ? BdApi.Webpack.Stores.GuildStore.getGuild(guildIdOrGuild) : guildIdOrGuild;
-  if (!guild) return buildFallbackDefinitions();
-  const specManager = findSpecManager();
-  if (!specManager) return buildFallbackDefinitions();
+  if (!guild) throw new Error("Guild not found");
   const guildSpecs = specManager.generateGuildPermissionSpec(guild);
-  if (!guildSpecs?.length) return buildFallbackDefinitions();
   return guildSpecs.map((category) => ({
     name: category.title,
     permissions: category.permissions.map((perm) => ({
@@ -7485,10 +7328,10 @@ var GuildRoleStore = Webpack.getStore("GuildRoleStore");
 var MemberStore = Webpack.getStore("GuildMemberStore");
 var UserStore2 = Webpack.getStore("UserStore");
 var DiscordPermissions2 = Webpack.getModule((m) => m.ADD_REACTIONS, { searchExports: true });
-var intlModule2 = BdApi.Webpack.getByKeys("intl");
+var intlModule = BdApi.Webpack.getByKeys("intl");
 var getRoles2 = (guild) => guild?.roles ?? GuildRoleStore?.getRolesSnapshot(guild?.id);
-var getPermString = (perm) => intlModule2?.intl.string(intlModule2.t[PermissionStringMap2[perm]]) ?? perm.toString();
-var PermissionStringMap2 = {
+var getPermString = (perm) => intlModule?.intl.string(intlModule.t[PermissionStringMap[perm]]) ?? perm.toString();
+var PermissionStringMap = {
   ADD_REACTIONS: "yEoJAr",
   ADMINISTRATOR: "PGvZqX",
   ATTACH_FILES: "3AS4UM",
@@ -7583,9 +7426,8 @@ var PermissionsViewer = class extends Plugin {
     this.unbindContextMenus();
   }
   patchPopouts(e) {
-    const popoutMount = (props2) => {
+    const popoutMount = (popout2, props2) => {
       if (!props2 || !props2.displayProfile || !props2.user) return;
-      const popout2 = document.querySelector(`[class*="userPopout_"], [class*="outer_"]`);
       if (!popout2 || popout2.querySelector("#permissions-popout")) return;
       const user = MemberStore?.getMember(props2.displayProfile.guildId, props2.user.id);
       const guild = GuildStore2?.getGuild(props2.displayProfile.guildId);
@@ -7638,7 +7480,7 @@ var PermissionsViewer = class extends Plugin {
     const popout = element2.querySelector(`[class*="userPopout_"], [class*="outer_"]`) ?? element2;
     if (!popout || !popout.matches(`[class*="userPopout_"], [class*="outer_"]`)) return;
     const props = Utils.findInTree(ReactUtils.getInternalInstance(popout), (m) => m && m.user, { walkable: ["memoizedProps", "return"] });
-    popoutMount(props);
+    popoutMount(popout, props);
   }
   bindPopouts() {
     this.observer = this.patchPopouts.bind(this);
