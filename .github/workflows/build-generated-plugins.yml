@@ -52,10 +52,6 @@ jobs:
           for dir in src/plugins/*; do
             [ -d "$dir" ] || continue
             plugin="$(basename "$dir")"
-            if [ "$plugin" = "BetterRoleColors" ]; then
-              echo "Skipping $plugin because its discontinued source tree is missing bundled assets."
-              continue
-            fi
             npm_package_json="$GITHUB_WORKSPACE/package.json" bun "$GITHUB_WORKSPACE/scripts/build.ts" "$plugin"
           done
 
