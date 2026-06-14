@@ -91,6 +91,19 @@ const PermissionStringMap: Record<keyof IDiscordPermissions, string> = {
     VIEW_GUILD_ANALYTICS: "rQJBE/",
 };
 
+const TemplateRetryDelays = [50, 150, 350, 750];
+const RequiredTemplateClassKeys = [
+    "role",
+    "roleCircle",
+    "roleName",
+    "roleTag"
+];
+
+interface PermissionTemplateSet {
+    sectionHTML: string;
+    itemHTML: string;
+}
+
 function isOverwriteEmpty(overwrite: PermissionOverwrite): boolean {
     return !overwrite.allow && !overwrite.deny && overwrite.type == 0;
 }
@@ -118,25 +131,18 @@ function classModuleToMap(module?: ClassModule): ClassModule {
     return classMap;
 }
 
+function stripUnresolvedClassTokens(html: string): string {
+    return html.replace(/{{(?!sectionTitle}})[^}]+}}/g, "");
+}
+
 export default class PermissionsViewer extends Plugin {
     constructor(meta: Meta) {super(meta, Config);}
 
-    sectionHTML: string;
-    itemHTML: string;
     contextMenuPatches: (() => void)[] = [];
+    popoutMountRetries = new WeakMap<HTMLDivElement, number>();
 
     onStart() {
         DOM.addStyle(this.meta.name, DefaultCSS);
-
-        const PopoutRoleClasses = classModuleToMap(Webpack.getByKeys<ClassModule>("roleCircle"));
-        const PopoutRoleClasses2 = classModuleToMap(Webpack.getByKeys<ClassModule>("role", "roleTag"));
-        const EyebrowClasses = classModuleToMap(Webpack.getByKeys<ClassModule>("defaultColor", "eyebrow"));
-
-        // const RoleClasses = Object.assign({}, PopoutRoleClasses, EyebrowClasses, classModuleToMap(Webpack.getByKeys<ClassModule>("role", "roleTag")));
-
-        // console.log("Classes:", {UserPopoutClasses, RoleClasses});
-        this.sectionHTML = formatString(SectionHTML, PopoutRoleClasses, PopoutRoleClasses2, EyebrowClasses);
-        this.itemHTML = formatString(ItemHTML, PopoutRoleClasses, PopoutRoleClasses2, EyebrowClasses);
 
         if (this.settings.popouts) this.bindPopouts();
         if (this.settings.contextMenus) this.bindContextMenus();
@@ -153,6 +159,8 @@ export default class PermissionsViewer extends Plugin {
             if (!props || !props.displayProfile || !props.user) return;
             // const popout = document.querySelector<HTMLDivElement>(`[class*="userPopout_"], [class*="outer_"]`);
             if (!popout || popout.querySelector("#permissions-popout")) return;
+            const templates = this.getPermissionTemplates();
+            if (!templates) return this.retryPopoutMount(popout, props);
             const user = MemberStore?.getMember(props.displayProfile.guildId, props.user.id);
             const guild = GuildStore?.getGuild(props.displayProfile.guildId);
             const name = MemberStore?.getNick(props.displayProfile.guildId, props.user.id) ?? props.user.username;
@@ -163,7 +171,7 @@ export default class PermissionsViewer extends Plugin {
             userRoles.push(guild.id);
             userRoles.reverse();
             let perms = 0n;
-            const permBlock = DOM.parseHTML(formatString(this.sectionHTML, {sectionTitle: this.strings.popoutLabel})) as HTMLDivElement;
+            const permBlock = DOM.parseHTML(formatString(templates.sectionHTML, {sectionTitle: this.strings.popoutLabel})) as HTMLDivElement;
             const memberPerms = permBlock.querySelector<HTMLDivElement>(".member-perms") as HTMLDivElement;
 
             const referenceRoles = getRoles(guild);
@@ -179,7 +187,7 @@ export default class PermissionsViewer extends Plugin {
                     const permName = getPermString(perm as keyof IDiscordPermissions) || perm.split("_").map(n => n[0].toUpperCase() + n.slice(1).toLowerCase()).join(" ");
                     const hasPerm = (perms & DiscordPermissions[perm as keyof typeof DiscordPermissions]!) == DiscordPermissions[perm as keyof typeof DiscordPermissions];
                     if (hasPerm && !memberPerms.querySelector(`[data-name="${permName}"]`)) {
-                        const element = DOM.parseHTML(this.itemHTML) as HTMLDivElement;
+                        const element = DOM.parseHTML(templates.itemHTML) as HTMLDivElement;
                         // element.classList.add(RoleClasses.rolePill);
                         let roleColor = referenceRoles[role].colorStrings?.primaryColor;
                         element.querySelector<HTMLDivElement>(".name")!.textContent = permName;
@@ -225,6 +233,37 @@ export default class PermissionsViewer extends Plugin {
         // console.log("Popout detected, patching...", popout);
         const props = Utils.findInTree<{displayProfile: {guildId: string;}; user: User;}>(ReactUtils.getInternalInstance(popout), (m: {user?: User;}) => m && m.user, {walkable: ["memoizedProps", "return"]});
         popoutMount(popout, props);
+    }
+
+    getPermissionTemplates(): PermissionTemplateSet | null {
+        const PopoutRoleClasses = classModuleToMap(Webpack.getByKeys<ClassModule>("roleCircle"));
+        const PopoutRoleClasses2 = classModuleToMap(Webpack.getByKeys<ClassModule>("role", "roleTag"));
+        const EyebrowClasses = classModuleToMap(Webpack.getByKeys<ClassModule>("defaultColor", "eyebrow"));
+        const classMap = Object.assign({}, PopoutRoleClasses, PopoutRoleClasses2, EyebrowClasses);
+
+        if (RequiredTemplateClassKeys.some(key => typeof classMap[key] !== "string" || !classMap[key])) return null;
+
+        return {
+            sectionHTML: stripUnresolvedClassTokens(formatString(SectionHTML, classMap)),
+            itemHTML: stripUnresolvedClassTokens(formatString(ItemHTML, classMap))
+        };
+    }
+
+    retryPopoutMount(popout: HTMLDivElement, props: {displayProfile: {guildId: string;}; user: User;}) {
+        const retryCount = this.popoutMountRetries.get(popout) ?? 0;
+        const retryDelay = TemplateRetryDelays[retryCount];
+
+        if (retryDelay === undefined) {
+            console.warn("[PermissionsViewer] Discord popout role classes were not ready; skipping permission popout render.");
+            return;
+        }
+
+        this.popoutMountRetries.set(popout, retryCount + 1);
+        setTimeout(() => {
+            if (!document.body.contains(popout) || popout.querySelector("#permissions-popout")) return;
+            const mutation = {addedNodes: [popout]} as unknown as MutationRecord;
+            this.patchPopouts(mutation);
+        }, retryDelay);
     }
 
     bindPopouts() {
