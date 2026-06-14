@@ -40,6 +40,7 @@ const GuildStore = BdApi.Webpack.Stores.GuildStore;
 const UserStore = BdApi.Webpack.Stores.UserStore;
 const DiscordPermissions = BdApi.Webpack.getModule<IDiscordPermissions>(m => m.ADD_REACTIONS, {searchExports: true})!;
 let specManager = null as SpecManager | null;
+let hasWarnedAboutMissingSpecManager = false;
 BdApi.Webpack.waitForModule<SpecManager>(BdApi.Webpack.Filters.byKeys("generateGuildPermissionSpec")).then(mod => {
     if (!mod) throw new Error("Permission spec manager not found");
     specManager = mod;
@@ -47,7 +48,7 @@ BdApi.Webpack.waitForModule<SpecManager>(BdApi.Webpack.Filters.byKeys("generateG
 
 
 export function getDefinitions(guildIdOrGuild?: string | Guild): PermissionCategoryDefinition[] {
-    if (!specManager) throw new Error("Permission spec manager not found");
+    if (!specManager) return getFallbackDefinitions();
 
     // If no guild is provided, default to the first guild in the sorted guild list
     if (!guildIdOrGuild) guildIdOrGuild = BdApi.Webpack.Stores.SortedGuildStore.getFlattenedGuildIds()[0];
@@ -65,6 +66,29 @@ export function getDefinitions(guildIdOrGuild?: string | Guild): PermissionCateg
             description: typeof perm.description === "function" ? perm.description(BdApi.Webpack.Stores.LocaleStore.locale).ast[0] : perm.description[0]
         }))
     }));
+}
+
+function getFallbackDefinitions(): PermissionCategoryDefinition[] {
+    if (!hasWarnedAboutMissingSpecManager) {
+        console.warn("[PermissionsViewer] Permission spec manager is not loaded yet; using fallback permission definitions.");
+        hasWarnedAboutMissingSpecManager = true;
+    }
+
+    return [{
+        name: "Permissions",
+        permissions: Object.keys(DiscordPermissions).map(perm => ({
+            id: perm,
+            name: formatPermissionName(perm),
+            description: ""
+        }))
+    }];
+}
+
+function formatPermissionName(permission: string): string {
+    return permission
+        .split("_")
+        .map(part => part[0] + part.slice(1).toLowerCase())
+        .join(" ");
 }
 
 
