@@ -6824,12 +6824,13 @@ var GuildStore = BdApi.Webpack.Stores.GuildStore;
 var UserStore = BdApi.Webpack.Stores.UserStore;
 var DiscordPermissions = BdApi.Webpack.getModule((m) => m.ADD_REACTIONS, { searchExports: true });
 var specManager = null;
+var hasWarnedAboutMissingSpecManager = false;
 BdApi.Webpack.waitForModule(BdApi.Webpack.Filters.byKeys("generateGuildPermissionSpec")).then((mod) => {
   if (!mod) throw new Error("Permission spec manager not found");
   specManager = mod;
 });
 function getDefinitions(guildIdOrGuild) {
-  if (!specManager) throw new Error("Permission spec manager not found");
+  if (!specManager) return getFallbackDefinitions();
   if (!guildIdOrGuild) guildIdOrGuild = BdApi.Webpack.Stores.SortedGuildStore.getFlattenedGuildIds()[0];
   const guild = typeof guildIdOrGuild === "string" ? BdApi.Webpack.Stores.GuildStore.getGuild(guildIdOrGuild) : guildIdOrGuild;
   if (!guild) throw new Error("Guild not found");
@@ -6842,6 +6843,23 @@ function getDefinitions(guildIdOrGuild) {
       description: typeof perm.description === "function" ? perm.description(BdApi.Webpack.Stores.LocaleStore.locale).ast[0] : perm.description[0]
     }))
   }));
+}
+function getFallbackDefinitions() {
+  if (!hasWarnedAboutMissingSpecManager) {
+    console.warn("[PermissionsViewer] Permission spec manager is not loaded yet; using fallback permission definitions.");
+    hasWarnedAboutMissingSpecManager = true;
+  }
+  return [{
+    name: "Permissions",
+    permissions: Object.keys(DiscordPermissions).map((perm) => ({
+      id: perm,
+      name: formatPermissionName(perm),
+      description: ""
+    }))
+  }];
+}
+function formatPermissionName(permission) {
+  return permission.split("_").map((part) => part[0] + part.slice(1).toLowerCase()).join(" ");
 }
 function getAllowedDenied(roleOrOverwrite) {
   const allowed = getAllowedPermissions(roleOrOverwrite);
