@@ -1,7 +1,0 @@
-{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "types": ["bun"] // only scripts get Bun globals
-  },
-  "include": ["*.ts"]
-}

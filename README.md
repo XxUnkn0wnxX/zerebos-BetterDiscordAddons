@@ -1,34 +1,20 @@
-# BetterDiscordAddons
+# BetterDiscordAddons downloads
 
-A series of plugins for BetterDiscord.
+Built from [source commit 5f05f3c8a1aa81de60d38871216385e2542d1150](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/5f05f3c8a1aa81de60d38871216385e2542d1150). This fork is based on [zerebos/BetterDiscordAddons](https://github.com/zerebos/BetterDiscordAddons). For source and build instructions, see [develop](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/develop).
+
+Download a plugin below and place the `.plugin.js` file in BetterDiscord's plugins folder.
 
 ## Plugins
-### [BetterFormattingRedux](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/BetterFormattingRedux)
 
-A rewrite of Anxeal's BetterFormatting that includes new options and settings.
+- [BetterFormattingRedux](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/BetterFormattingRedux/BetterFormattingRedux.plugin.js)
+- [BlurNSFW](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/BlurNSFW/BlurNSFW.plugin.js)
+- [DoNotTrack](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/DoNotTrack/DoNotTrack.plugin.js)
+- [GhostPingDetector](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/GhostPingDetector/GhostPingDetector.plugin.js)
+- [HideDisabledEmojis](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/HideDisabledEmojis/HideDisabledEmojis.plugin.js)
+- [HideIconBadge](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/HideIconBadge/HideIconBadge.plugin.js)
+- [PermissionsViewer](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/PermissionsViewer/PermissionsViewer.plugin.js)
+- [RoleMembers](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Plugins/RoleMembers/RoleMembers.plugin.js)
 
-### [BlurNSFW](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/BlurNSFW)
+## Archive
 
-Blurs images in any channel, DM or Group!
-
-### [DoNotTrack](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/DoNotTrack)
-
-Stops Discord from tracking everything you do like Sentry and Analytics.
-
-### [HideDisabledEmojis](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/HideDisabledEmojis)
-
-Hides disabled emojis from the emoji picker.
-
-### [HideIconBadge](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/HideIconBadge)
-
-Hides the badge that appears on the taskbar icon.
-
-### [PermissionsViewer](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/PermissionsViewer)
-
-Allows you to view all the permissions for users, servers, and channels!
-
-### [RoleMembers](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/RoleMembers)
-
-Allows you to see the members of each role on a server.
-
-
+[BetterRoleColors](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/raw/refs/heads/master/Archive/Plugins/BetterRoleColors/BetterRoleColors.plugin.js) is a retained historical build; it is not rebuilt by this workflow.

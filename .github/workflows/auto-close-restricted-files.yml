@@ -94,12 +94,12 @@ jobs:
             message += 'Modifying these files directly is not allowed.\n\n';
             message += '## How to contribute properly:\n\n';
             message += '1. 📁 Make your changes in the `src/plugins/` folder instead\n';
-            message += '2. 🔧 Use the build script to generate the plugin files: `bun run build`\n';
+            message += '2. 🔧 Use the build script to generate the plugin files: `bun run build <PluginName>` (output: `dist/Plugins/<PluginName>/`)\n';
             message += '3. 📤 Submit a new pull request with only the source file changes from `src/`\n';
-            message += '4. ❌ Do **NOT** include the generated files from `Plugins/` in your PR\n\n';
+            message += '4. ❌ Do **NOT** include the generated files from `dist/` in your PR\n\n';
             message += '## Additional resources:\n';
-            message += '- 📖 [Contributing Guidelines](' + context.payload.repository.html_url + '/blob/master/CONTRIBUTING.md)\n';
-            message += '- 🏗️ [Build Documentation](' + context.payload.repository.html_url + '/blob/master/README.md)\n\n';
+            message += '- 📖 [Contributing Guidelines](' + context.payload.repository.html_url + '/blob/develop/CONTRIBUTING.md)\n';
+            message += '- 🏗️ [Build Documentation](' + context.payload.repository.html_url + '/blob/develop/README.md)\n\n';
             message += 'Thank you for your interest in contributing! Please resubmit your PR following the guidelines above. 🙏';
 
             console.log('=== DEBUG: Message built successfully ===');
