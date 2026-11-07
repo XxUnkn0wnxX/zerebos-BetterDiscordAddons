@@ -17,10 +17,11 @@ const fixture = t => {
     for (const name of plugins) {
         put(source, `src/plugins/${name}/config.ts`);
         put(source, `dist/Plugins/${name}/${name}.plugin.js`);
-        if (name !== "GhostPingDetector") put(source, `docs/plugins/${name}/README.md`);
+        if (name !== "GhostPingDetector") put(master, `Plugins/${name}/README.md`, Buffer.from(`guide:${name}\n`));
     }
-    for (const file of ["docs/archive/BetterRoleColors/README.md", ".github/workflows/build.yml", "LICENSE", ".gitignore", ".gitattributes"]) put(source, file);
+    for (const file of [".github/workflows/build.yml", "LICENSE", ".gitignore", ".gitattributes"]) put(source, file);
     put(master, "Archive/Plugins/BetterRoleColors/BetterRoleColors.plugin.js", Buffer.from([0, 1, 255, 10]));
+    put(master, "Archive/Plugins/BetterRoleColors/README.md", Buffer.from("archived guide\n"));
     put(master, "Plugins/Stale/Stale.plugin.js"); put(master, "src/old.js");
     run(master, "add", "-A"); run(master, "commit", "-qm", "old");
     run(source, "add", "-A"); run(source, "commit", "-qm", "source");
@@ -30,9 +31,12 @@ const fixture = t => {
 test("complete staging preserves archive, removes stale and source files, and is idempotent", t => {
     const f = fixture(t), archive = "Archive/Plugins/BetterRoleColors/BetterRoleColors.plugin.js";
     const bytes = readFileSync(path.join(f.master, archive));
+    const guides = [...plugins.filter(n => n !== "GhostPingDetector").map(n => `Plugins/${n}/README.md`), "Archive/Plugins/BetterRoleColors/README.md"];
+    const guideBytes = guides.map(file => readFileSync(path.join(f.master, file)));
     stageDistribution(f.source, f.master, f.stage, f.sha, f.url);
     applyDistribution(f.master, f.stage);
     assert.deepEqual(readFileSync(path.join(f.master, archive)), bytes);
+    guides.forEach((file, index) => assert.deepEqual(readFileSync(path.join(f.master, file)), guideBytes[index]));
     assert.equal(readdirSync(path.join(f.master, "Plugins")).length, 8);
     assert.throws(() => readFileSync(path.join(f.master, "Plugins/Stale/Stale.plugin.js")));
     assert.throws(() => readFileSync(path.join(f.master, "src/old.js")));
@@ -43,6 +47,7 @@ test("complete staging preserves archive, removes stale and source files, and is
     stageDistribution(f.source, f.master, f.stage, f.sha, f.url);
     applyDistribution(f.master, f.stage);
     assert.equal(run(f.master, "status", "--porcelain"), "");
+    guides.forEach((file, index) => assert.deepEqual(readFileSync(path.join(f.master, file)), guideBytes[index]));
 });
 
 test("missing artifact or archive fails before clearing master", t => {
@@ -57,6 +62,11 @@ test("missing artifact or archive fails before clearing master", t => {
     assert.throws(() => stageDistribution(f.source, f.master, f.stage, f.sha, f.url));
     assert.throws(() => applyDistribution(f.master, f.stage));
     assert.equal(run(f.master, "status", "--porcelain"), "");
+    const missingGuide = fixture(t);
+    run(missingGuide.master, "rm", "-q", "Plugins/DoNotTrack/README.md"); run(missingGuide.master, "commit", "-qm", "remove guide");
+    assert.throws(() => stageDistribution(missingGuide.source, missingGuide.master, missingGuide.stage, missingGuide.sha, missingGuide.url));
+    assert.throws(() => applyDistribution(missingGuide.master, missingGuide.stage));
+    assert.equal(run(missingGuide.master, "status", "--porcelain"), "");
 });
 
 test("freshness allows only irrelevant descendants", t => {
@@ -66,11 +76,7 @@ test("freshness allows only irrelevant descendants", t => {
     assert.doesNotThrow(() => checkFreshness(f.source, f.sha, docs));
     put(f.source, "src/plugins/DoNotTrack/config.ts", "changed"); run(f.source, "add", "-A"); run(f.source, "commit", "-qm", "code");
     assert.throws(() => checkFreshness(f.source, f.sha, "HEAD"));
-    put(f.source, "docs/plugins/DoNotTrack/README.md", "changed"); run(f.source, "add", "-A"); run(f.source, "commit", "-qm", "plugin docs");
-    assert.throws(() => checkFreshness(f.source, "HEAD~1", "HEAD"));
     put(f.source, ".github/ISSUE_TEMPLATE/bug.yml", "template"); run(f.source, "add", "-A"); run(f.source, "commit", "-qm", "template");
-    assert.throws(() => checkFreshness(f.source, "HEAD~1", "HEAD"));
-    put(f.source, "docs/archive/BetterRoleColors/README.md", "archive docs"); run(f.source, "add", "-A"); run(f.source, "commit", "-qm", "archive docs");
     assert.throws(() => checkFreshness(f.source, "HEAD~1", "HEAD"));
     assert.throws(() => checkFreshness(f.source, "HEAD", f.sha));
     assert.throws(() => checkFreshness(f.source, "missing-ref", "HEAD"));

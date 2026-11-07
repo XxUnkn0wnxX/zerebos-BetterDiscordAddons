@@ -5,7 +5,7 @@ import {fileURLToPath} from "node:url";
 
 export const plugins = ["BetterFormattingRedux", "BlurNSFW", "DoNotTrack", "GhostPingDetector", "HideDisabledEmojis", "HideIconBadge", "PermissionsViewer", "RoleMembers"];
 // These match the workflow's push paths; keep both lists in sync.
-export const inputs = ["src/**", "scripts/**", "package.json", "bun.lock", "tsconfig.json", "eslint.config.js", ".github/**", "docs/plugins/**", "docs/archive/**", "LICENSE", ".gitignore", ".gitattributes"];
+export const inputs = ["src/**", "scripts/**", "package.json", "bun.lock", "tsconfig.json", "eslint.config.js", ".github/**", "LICENSE", ".gitignore", ".gitattributes"];
 const git = (cwd, ...args) => execFileSync("git", args, {cwd, encoding: "utf8"});
 const required = file => {if (!existsSync(file)) throw new Error(`Missing required file: ${file}`); return file;};
 const copy = (src, dest) => {mkdirSync(path.dirname(dest), {recursive: true}); cpSync(required(src), dest);};
@@ -23,21 +23,24 @@ export function stageDistribution(source, master, stage, sha, repository) {
     if (readdirSync(stage).length) throw new Error("Staging directory must be empty");
     const actual = readdirSync(path.join(source, "src/plugins"), {withFileTypes: true}).filter(e => e.isDirectory() && existsSync(path.join(source, "src/plugins", e.name, "config.ts"))).map(e => e.name).sort();
     if (JSON.stringify(actual) !== JSON.stringify([...plugins].sort())) throw new Error("Unexpected active plugin configs");
+    const retain = file => {
+        const bytes = execFileSync("git", ["show", `HEAD:${file}`], {cwd: master});
+        const dest = path.join(stage, file);
+        mkdirSync(path.dirname(dest), {recursive: true});
+        writeFileSync(dest, bytes);
+        return bytes;
+    };
     for (const name of plugins) {
         copy(path.join(source, "dist/Plugins", name, `${name}.plugin.js`), path.join(stage, "Plugins", name, `${name}.plugin.js`));
-        if (name !== "GhostPingDetector") copy(path.join(source, "docs/plugins", name, "README.md"), path.join(stage, "Plugins", name, "README.md"));
+        if (name !== "GhostPingDetector") retain(`Plugins/${name}/README.md`);
     }
     const archived = "Archive/Plugins/BetterRoleColors/BetterRoleColors.plugin.js";
-    const archiveBytes = execFileSync("git", ["show", `HEAD:${archived}`], {cwd: master});
-    if (!archiveBytes.length) throw new Error("Archived plugin is empty");
-    const archiveDest = path.join(stage, archived);
-    mkdirSync(path.dirname(archiveDest), {recursive: true});
-    writeFileSync(archiveDest, archiveBytes);
-    copy(path.join(source, "docs/archive/BetterRoleColors/README.md"), path.join(stage, "Archive/Plugins/BetterRoleColors/README.md"));
+    if (!retain(archived).length) throw new Error("Archived plugin is empty");
+    retain("Archive/Plugins/BetterRoleColors/README.md");
     for (const file of ["LICENSE", ".gitignore", ".gitattributes"]) copy(path.join(source, file), path.join(stage, file));
     cpSync(required(path.join(source, ".github")), path.join(stage, ".github"), {recursive: true});
-    const listing = plugins.map(name => `- [${name}](${repository}/raw/refs/heads/master/Plugins/${name}/${name}.plugin.js)`).join("\n");
-    writeFileSync(path.join(stage, "README.md"), `# BetterDiscordAddons downloads\n\nBuilt from [source commit ${sha}](${repository}/tree/${sha}). This fork is based on [zerebos/BetterDiscordAddons](https://github.com/zerebos/BetterDiscordAddons). For source and build instructions, see [develop](${repository}/tree/develop).\n\nDownload a plugin below and place the \`.plugin.js\` file in BetterDiscord's plugins folder.\n\n## Plugins\n\n${listing}\n\n## Archive\n\n[BetterRoleColors](${repository}/raw/refs/heads/master/Archive/Plugins/BetterRoleColors/BetterRoleColors.plugin.js) is a retained historical build; it is not rebuilt by this workflow.\n`);
+    const listing = plugins.map(name => `- [${name}](${repository}/raw/refs/heads/master/Plugins/${name}/${name}.plugin.js)${name === "GhostPingDetector" ? "" : ` · [Guide](Plugins/${name}/README.md)`}`).join("\n");
+    writeFileSync(path.join(stage, "README.md"), `# BetterDiscordAddons downloads\n\nBuilt from [source commit ${sha}](${repository}/tree/${sha}). This fork is based on [zerebos/BetterDiscordAddons](https://github.com/zerebos/BetterDiscordAddons). For source and build instructions, see [develop](${repository}/tree/develop).\n\nDownload a plugin below and place the \`.plugin.js\` file in BetterDiscord's plugins folder.\n\n## Plugins\n\n${listing}\n\n## Archive\n\n[BetterRoleColors](${repository}/raw/refs/heads/master/Archive/Plugins/BetterRoleColors/BetterRoleColors.plugin.js) is a retained historical build; it is not rebuilt by this workflow. [Guide](Archive/Plugins/BetterRoleColors/README.md).\n`);
 }
 
 export function applyDistribution(master, stage) {

@@ -4,14 +4,14 @@ This is a fork of [zerebos/BetterDiscordAddons](https://github.com/zerebos/Bette
 
 ## Plugins
 
-- [BetterFormattingRedux](docs/plugins/BetterFormattingRedux/README.md)
-- [BlurNSFW](docs/plugins/BlurNSFW/README.md)
-- [DoNotTrack](docs/plugins/DoNotTrack/README.md)
+- BetterFormattingRedux
+- BlurNSFW
+- DoNotTrack
 - GhostPingDetector
-- [HideDisabledEmojis](docs/plugins/HideDisabledEmojis/README.md)
-- [HideIconBadge](docs/plugins/HideIconBadge/README.md)
-- [PermissionsViewer](docs/plugins/PermissionsViewer/README.md)
-- [RoleMembers](docs/plugins/RoleMembers/README.md)
+- HideDisabledEmojis
+- HideIconBadge
+- PermissionsViewer
+- RoleMembers
 
 Download the desired `.plugin.js` from its directory on [master](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/master/Plugins) and place it in BetterDiscord's plugins folder.
 
@@ -32,6 +32,6 @@ For a manually dispatched publication, select the `develop` branch when starting
 
 ## Archive
 
-[BetterRoleColors source](Archive/src/plugins/BetterRoleColors) and its [documentation](docs/archive/BetterRoleColors/README.md) are retained here. Its [last retained build](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/master/Archive/Plugins/BetterRoleColors) is on master and is not rebuilt by the publication workflow.
+[BetterRoleColors source](Archive/src/plugins/BetterRoleColors) is retained here; its [documentation](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/blob/master/Archive/Plugins/BetterRoleColors/README.md) is on master. Its [last retained build](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/master/Archive/Plugins/BetterRoleColors) is on master and is not rebuilt by the publication workflow.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [LICENSE](LICENSE).
