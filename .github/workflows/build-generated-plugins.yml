@@ -10,31 +10,35 @@ on:
       - "package.json"
       - "bun.lock"
       - "tsconfig.json"
-      - "scripts/tsconfig.json"
       - "eslint.config.js"
-      - ".github/workflows/**"
+      - ".github/**"
+      - "docs/plugins/**"
+      - "docs/archive/**"
+      - "LICENSE"
+      - ".gitignore"
+      - ".gitattributes"
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: publish-master
+  cancel-in-progress: false
+
 jobs:
   build-and-sync:
-    if: github.actor != 'github-actions[bot]'
+    if: github.actor != 'github-actions[bot]' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout develop
+      - name: Checkout source commit
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
-
-      - name: Prepare BetterDiscord build directory
-        run: mkdir -p "$HOME/.config/BetterDiscord/plugins"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts --save-text-lockfile
@@ -44,60 +48,40 @@ jobs:
           npm install --no-save --no-audit --no-fund esbuild@^0.27.3
           node -e 'const esbuild = require("esbuild"); const host = esbuild.version; const binary = require("child_process").execFileSync(require.resolve("esbuild/bin/esbuild"), ["--version"], {encoding: "utf8"}).trim(); if (host !== binary) throw new Error(`esbuild host ${host} does not match binary ${binary}`); console.log(`esbuild ${host}`);'
 
+      - name: Run focused tests
+        run: node --test src/plugins/PermissionsViewer/index.test.mjs scripts/publish.test.mjs
+
       - name: Build all plugins
         shell: bash
         run: |
           set -euo pipefail
-
           for dir in src/plugins/*; do
-            [ -d "$dir" ] || continue
-            plugin="$(basename "$dir")"
-            npm_package_json="$GITHUB_WORKSPACE/package.json" bun "$GITHUB_WORKSPACE/scripts/build.ts" "$plugin"
+            [ -f "$dir/config.ts" ] || continue
+            bun scripts/build.ts "$(basename "$dir")"
           done
 
-      - name: Configure git
+      - name: Prepare and publish distribution
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.server_url }}/${{ github.repository }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Commit generated plugins to develop
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          git checkout develop
-          git add Plugins/*/*.plugin.js
-
-          if git diff --cached --quiet; then
-            echo "No generated plugin changes for develop."
-            exit 0
-          fi
-
-          git commit -m "Build generated plugin files" -m "Automation
-          - rebuild Plugins/*.plugin.js from develop source changes
-          - triggered only by develop source/build config updates"
-          git push origin HEAD:develop
-
-      - name: Sync generated plugins to master
-        shell: bash
-        run: |
-          set -euo pipefail
-
           git fetch origin develop master
-          git checkout master
-          git pull --ff-only origin master
-
-          mapfile -t plugin_files < <(git ls-tree -r --name-only origin/develop -- Plugins | grep -E '^Plugins/[^/]+/[^/]+\.plugin\.js$' || true)
-          git rm -q --ignore-unmatch Plugins/*/*.plugin.js
-          git checkout origin/develop -- "${plugin_files[@]}"
-          git add Plugins
-
-          if git diff --cached --quiet; then
-            echo "No generated plugin changes for master."
+          node scripts/publish.mjs fresh "$GITHUB_WORKSPACE" "$SOURCE_SHA" origin/develop
+          master_dir="$(mktemp -d)"
+          stage_dir="$(mktemp -d)"
+          git worktree add --detach "$master_dir" origin/master
+          node scripts/publish.mjs stage "$GITHUB_WORKSPACE" "$master_dir" "$stage_dir" "$SOURCE_SHA" "$REPOSITORY"
+          node scripts/publish.mjs apply "$master_dir" "$stage_dir"
+          git -C "$master_dir" add -A
+          if git -C "$master_dir" diff --cached --quiet; then
+            echo "Distribution already matches source commit $SOURCE_SHA."
             exit 0
           fi
-
-          git commit -m "Sync generated plugin files from develop" -m "Automation
-          - copy rebuilt Plugins/*.plugin.js from develop
-          - triggered by develop source/build config updates"
-          git push origin HEAD:master
+          git -C "$master_dir" commit -m "Publish plugins from $SOURCE_SHA"
+          git fetch origin develop
+          node scripts/publish.mjs fresh "$GITHUB_WORKSPACE" "$SOURCE_SHA" origin/develop
+          git -C "$master_dir" push origin HEAD:master

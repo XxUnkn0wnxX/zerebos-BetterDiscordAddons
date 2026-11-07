@@ -1,34 +1,37 @@
 # BetterDiscordAddons
 
-A series of plugins for BetterDiscord.
+This is a fork of [zerebos/BetterDiscordAddons](https://github.com/zerebos/BetterDiscordAddons), a collection of BetterDiscord plugins. [master](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/master) is the default branch and contains the built plugins for download; `develop` contains the source.
 
 ## Plugins
-### [BetterFormattingRedux](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/BetterFormattingRedux)
 
-A rewrite of Anxeal's BetterFormatting that includes new options and settings.
+- [BetterFormattingRedux](docs/plugins/BetterFormattingRedux/README.md)
+- [BlurNSFW](docs/plugins/BlurNSFW/README.md)
+- [DoNotTrack](docs/plugins/DoNotTrack/README.md)
+- GhostPingDetector
+- [HideDisabledEmojis](docs/plugins/HideDisabledEmojis/README.md)
+- [HideIconBadge](docs/plugins/HideIconBadge/README.md)
+- [PermissionsViewer](docs/plugins/PermissionsViewer/README.md)
+- [RoleMembers](docs/plugins/RoleMembers/README.md)
 
-### [BlurNSFW](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/BlurNSFW)
+Download the desired `.plugin.js` from its directory on [master](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/master/Plugins) and place it in BetterDiscord's plugins folder.
 
-Blurs images in any channel, DM or Group!
+## Building
 
-### [DoNotTrack](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/DoNotTrack)
+Make source changes and open pull requests against `develop`.
 
-Stops Discord from tracking everything you do like Sentry and Analytics.
+Install the dependencies with `bun install --frozen-lockfile`, then build an individual plugin:
 
-### [HideDisabledEmojis](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/HideDisabledEmojis)
+```sh
+bun run build PermissionsViewer
+bun run build PermissionsViewer --watch
+```
 
-Hides disabled emojis from the emoji picker.
+Builds are written to `dist/Plugins/<PluginName>/<PluginName>.plugin.js`. Add `--install` to explicitly copy each build to your existing BetterDiscord plugins folder. Without it, builds and watch mode do not access that folder.
 
-### [HideIconBadge](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/HideIconBadge)
+For a manually dispatched publication, select the `develop` branch when starting the workflow.
 
-Hides the badge that appears on the taskbar icon.
+## Archive
 
-### [PermissionsViewer](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/PermissionsViewer)
+[BetterRoleColors source](Archive/src/plugins/BetterRoleColors) and its [documentation](docs/archive/BetterRoleColors/README.md) are retained here. Its [last retained build](https://github.com/XxUnkn0wnxX/zerebos-BetterDiscordAddons/tree/master/Archive/Plugins/BetterRoleColors) is on master and is not rebuilt by the publication workflow.
 
-Allows you to view all the permissions for users, servers, and channels!
-
-### [RoleMembers](https://github.com/zerebos/BetterDiscordAddons/tree/master/Plugins/RoleMembers)
-
-Allows you to see the members of each role on a server.
-
-
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [LICENSE](LICENSE).

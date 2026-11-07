@@ -12,28 +12,26 @@ import buildMeta from "./meta";
 import {$} from "bun";
 
 
-const pluginName = process.argv.slice(2)[0];
-
-// Initialize bdFolder
-const windows = process.env.APPDATA;
-const mac = process.env.HOME + "/Library/Application Support";
-const linux = process.env.XDG_CONFIG_HOME ? process.env.XDG_CONFIG_HOME : process.env.HOME + "/.config";
-let bdFolder = (process.platform == "win32" ? windows : process.platform == "darwin" ? mac : linux) + "/BetterDiscord/";
-
-// WSL detected, generate proper windows path for wsl
-if (process.env.WSL_DISTRO_NAME) {
-    // We could try..catch here but if this fails we want the build to fail anyway
-    const appdata = (await $`wslpath "$(cmd.exe /c "echo %APPDATA%" 2>/dev/null | tr -d '\r')"`.text()).trim();
-    bdFolder = path.join(appdata, "BetterDiscord") + "/";
+const pluginName = process.argv.slice(2).find(arg => !arg.startsWith("--"));
+if (!pluginName || !/^[A-Za-z0-9]+$/.test(pluginName)) throw new Error("Provide a valid plugin name");
+const shouldInstall = process.argv.includes("--install");
+let bdFolder: string | undefined;
+if (shouldInstall) {
+    const windows = process.env.APPDATA;
+    const mac = process.env.HOME + "/Library/Application Support";
+    const linux = process.env.XDG_CONFIG_HOME || process.env.HOME + "/.config";
+    bdFolder = path.join((process.platform == "win32" ? windows : process.platform == "darwin" ? mac : linux)!, "BetterDiscord");
+    if (process.env.WSL_DISTRO_NAME) {
+        const appdata = (await $`wslpath "$(cmd.exe /c "echo %APPDATA%" 2>/dev/null | tr -d '\r')"`.text()).trim();
+        bdFolder = path.join(appdata, "BetterDiscord");
+    }
 }
 
-// Setup input and output bases
-const projectRoot = path.dirname(process.env.npm_package_json ?? "..");
+const projectRoot = path.resolve(import.meta.dir, "..");
 const pluginsPath = path.join(projectRoot, "src", "plugins");
-const releasePath = path.join(projectRoot, "Plugins", pluginName);
+const releasePath = path.join(projectRoot, "dist", "Plugins", pluginName);
 const releaseFile = path.join(releasePath, `${pluginName}.plugin.js`);
-if (!fs.existsSync(pluginsPath)) fs.mkdirSync(pluginsPath, {recursive: true});
-if (!fs.existsSync(releasePath)) fs.mkdirSync(releasePath, {recursive: true});
+fs.mkdirSync(releasePath, {recursive: true});
 
 // Setup plugin specific paths
 const pluginFolder = path.join(pluginsPath, pluginName);
@@ -42,7 +40,7 @@ const pluginFolderExists = fs.existsSync(pluginFolder);
 const configExists = fs.existsSync(configPath);
 
 
-// Copies to BD folder after every build and updates the meta
+// Finalizes each bundle and optionally copies it to BetterDiscord.
 const copyToBDPlugin: esbuild.Plugin = {
     name: "CopyToBD",
     async setup(build: esbuild.PluginBuild) {
@@ -56,7 +54,7 @@ const copyToBDPlugin: esbuild.Plugin = {
             const newFileContent = banner + output + "\n/*@end@*/";
             fs.writeFileSync(releaseFile, newFileContent);
 
-            fs.writeFileSync(path.join(bdFolder, "plugins", `${pluginName}.plugin.js`), fs.readFileSync(releaseFile));
+            if (bdFolder) fs.writeFileSync(path.join(bdFolder, "plugins", `${pluginName}.plugin.js`), fs.readFileSync(releaseFile));
         });
 
 
