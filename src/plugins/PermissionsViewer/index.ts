@@ -29,14 +29,30 @@ const GuildRoleStore = Webpack.getStore<{getRolesSnapshot(id: string): Record<st
 const MemberStore = Webpack.getStore<{getNick(gid: string, uid: string): string; getMembers(id: string): GuildMember[]; getMember(gid: string, uid: string): GuildMember;}>("GuildMemberStore");
 const UserStore = Webpack.getStore<{getUser(id: string): User;}>("UserStore");
 const DiscordPermissions = Webpack.getModule<IDiscordPermissions>(m => m.ADD_REACTIONS, {searchExports: true});
-const intlModule = BdApi.Webpack.getByKeys<{intl: {string(hash: string): string;}; t: Record<string, string>;}>("intl");
+const intlModule = BdApi.Webpack.getByKeys<{intl: {string(hash: unknown): string | undefined;}; t: Record<string, unknown>;}>("intl");
 
 
 const getRoles = (guild: {roles?: Record<string, GuildRole>; id: string;}): Record<string, GuildRole> | undefined => guild?.roles ?? GuildRoleStore?.getRolesSnapshot(guild?.id);
 // const getHashString = (hash: string) => intlModule?.intl.string(hash);
-const getPermString = (perm: keyof IDiscordPermissions) => intlModule?.intl.string(intlModule.t[PermissionStringMap[perm]]) ?? perm.toString();
+const getPermString = (perm: keyof IDiscordPermissions) => getPermissionLabel(perm, PermissionStringMap, intlModule);
 
-const PermissionStringMap: Record<keyof IDiscordPermissions, string> = {
+function formatPermissionName(permission: string): string {
+    return permission.split("_").map(part => part[0].toUpperCase() + part.slice(1).toLowerCase()).join(" ");
+}
+
+function getPermissionLabel(
+    permission: string,
+    stringMap: Record<string, string | undefined>,
+    translations?: {intl?: {string(token: unknown): string | undefined;}; t?: Record<string, unknown>;}
+): string {
+    const token = stringMap[permission];
+    if (token === undefined) return formatPermissionName(permission);
+    const translationToken = translations?.t?.[token];
+    if (translationToken == null) return formatPermissionName(permission);
+    return translations?.intl?.string(translationToken) ?? formatPermissionName(permission);
+}
+
+const PermissionStringMap: Partial<Record<keyof IDiscordPermissions, string>> = {
     ADD_REACTIONS: "yEoJAr",
     ADMINISTRATOR: "PGvZqX",
     ATTACH_FILES: "3AS4UM",
@@ -127,6 +143,17 @@ function classModuleToMap(module?: ClassModule): ClassModule {
         classMap[key] = descriptors[key].value;
     }
     return classMap;
+}
+
+function getPermissionStyleClasses(lookup: (...keys: string[]) => ClassModule | undefined): ClassModule {
+    const legacyTypography = classModuleToMap(lookup("text-xs/semibold"));
+    const currentTypography = classModuleToMap(lookup("body-xs/semibold"));
+    const typographyClasses = Object.assign({}, currentTypography, legacyTypography);
+    typographyClasses["text-xs/semibold"] ??= currentTypography["body-xs/semibold"];
+    typographyClasses["text-xs/normal"] ??= currentTypography["body-xs/normal"];
+
+    const colorClasses = classModuleToMap(lookup("defaultColor", "eyebrow") ?? lookup("defaultColor"));
+    return Object.assign({}, typographyClasses, colorClasses);
 }
 
 function stripUnresolvedClassTokens(html: string): string {
@@ -272,8 +299,8 @@ export default class PermissionsViewer extends Plugin {
 
         const PopoutRoleClasses = classModuleToMap(Webpack.getByKeys<ClassModule>("roleCircle"));
         const PopoutRoleClasses2 = classModuleToMap(Webpack.getByKeys<ClassModule>("role", "roleTag"));
-        const EyebrowClasses = classModuleToMap(Webpack.getByKeys<ClassModule>("defaultColor", "eyebrow"));
-        const classMap = Object.assign({}, PopoutRoleClasses, PopoutRoleClasses2, EyebrowClasses, this.getPopoutClassMap(popout));
+        const StyleClasses = getPermissionStyleClasses((...keys) => Webpack.getByKeys<ClassModule>(...keys));
+        const classMap = Object.assign({}, PopoutRoleClasses, PopoutRoleClasses2, StyleClasses, this.getPopoutClassMap(popout));
 
         if (RequiredTemplateClassKeys.some(key => typeof classMap[key] !== "string" || !classMap[key])) return null;
 
