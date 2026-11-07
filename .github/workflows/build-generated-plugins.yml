@@ -12,8 +12,6 @@ on:
       - "tsconfig.json"
       - "eslint.config.js"
       - ".github/**"
-      - "docs/plugins/**"
-      - "docs/archive/**"
       - "LICENSE"
       - ".gitignore"
       - ".gitattributes"
