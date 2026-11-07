@@ -353,7 +353,7 @@ var manifest = {
 var config_default = manifest;
 
 // src/plugins/PermissionsViewer/styles.css
-var styles_default = ".perm-user-avatar {\n    border-radius: 50%;\n    width: 16px;\n    height: 16px;\n    margin-right: 3px;\n}\n\n.member-perms-header {\n    display: flex;\n    justify-content: space-between;\n}\n\n.member-perms {\n    display: flex;\n    flex-wrap: wrap;\n    margin-top: 2px;\n    max-height: 160px;\n    overflow-y: auto;\n    overflow-x: hidden;\n}\n\n.member-perms .member-perm .perm-circle {\n    border-radius: 50%;\n    height: 12px;\n    margin: 0 8px 0 5px;\n    width: 12px;\n}\n\n.member-perms .member-perm .name {\n    margin-right: 4px;\n    max-width: 200px;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.perm-details-button {\n    cursor: pointer;\n    height: 12px;\n}\n\n.perm-details {\n    display: flex;\n    justify-content: flex-end;\n}\n\n.member-perm-details {\n    cursor: pointer;\n}\n\n.member-perm-details-button {\n    fill: #72767d;\n    height: 10px;\n}\n\n.member-perms::-webkit-scrollbar-thumb,\n.member-perms::-webkit-scrollbar-track {\n    background-clip: padding-box;\n    border-radius: 7.5px;\n    border-style: solid;\n    border-width: 3px;\n    visibility: hidden;\n}\n\n.member-perms:hover::-webkit-scrollbar-thumb,\n.member-perms:hover::-webkit-scrollbar-track {\n    visibility: visible;\n}\n\n.member-perms::-webkit-scrollbar-track {\n    border-width: initial;\n    background-color: transparent;\n    border: 2px solid transparent;\n}\n\n.member-perms::-webkit-scrollbar-thumb {\n    border: 2px solid transparent;\n    border-radius: 4px;\n    cursor: move;\n    background-color: rgba(32,34,37,.6);\n}\n\n.member-perms::-webkit-scrollbar {\n    height: 8px;\n    width: 8px;\n}";
+var styles_default = ".perm-user-avatar {\n    border-radius: 50%;\n    width: 16px;\n    height: 16px;\n    margin-right: 3px;\n}\n\n.member-perms-header {\n    display: flex;\n    justify-content: space-between;\n}\n\n.member-perms {\n    display: flex;\n    flex-wrap: wrap;\n    margin-top: 2px;\n    max-height: 160px;\n    overflow-y: auto;\n    overflow-x: hidden;\n}\n\n.member-perms .member-perm .perm-circle {\n    border-radius: 50%;\n    height: 12px;\n    margin: 0 8px 0 5px;\n    width: 12px;\n}\n\n.member-perms .member-perm .name {\n    margin-right: 4px;\n    max-width: 200px;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.perm-details-button {\n    cursor: pointer;\n    height: 12px;\n}\n\n.perm-details {\n    display: flex;\n    justify-content: flex-end;\n}\n\n.member-perm-details {\n    cursor: pointer;\n}\n\n.member-perm-details-button {\n    fill: #72767d;\n    height: 10px;\n}\n\n.member-perms::-webkit-scrollbar-thumb,\n.member-perms::-webkit-scrollbar-track {\n    background-clip: padding-box;\n    border-radius: 7.5px;\n    border-style: solid;\n    border-width: 3px;\n    visibility: hidden;\n}\n\n.member-perms:hover::-webkit-scrollbar-thumb,\n.member-perms:hover::-webkit-scrollbar-track {\n    visibility: visible;\n}\n\n.member-perms::-webkit-scrollbar-track {\n    border-width: initial;\n    background-color: var(--scrollbar-thin-track);\n    border: 2px solid transparent;\n}\n\n.member-perms::-webkit-scrollbar-thumb {\n    border: 2px solid transparent;\n    border-radius: 4px;\n    cursor: move;\n    background-color: var(--scrollbar-thin-thumb);\n}\n\n.member-perms::-webkit-scrollbar {\n    height: 8px;\n    width: 8px;\n}\n";
 
 // src/plugins/PermissionsViewer/item.html
 var item_default = '<div class="{{roleTag}}">\n    <div class="member-perm {{role}}" style="max-width: 268px;">\n        <span class="perm-circle {{roleCircle}} {{desaturateUserColors}}"></span>\n        <div class="name {{text-xs/normal}} {{roleName}}" style="color: var(--text-default);"></div>\n    </div>\n</div>';
@@ -7003,7 +7003,17 @@ var UserStore2 = Webpack.getStore("UserStore");
 var DiscordPermissions2 = Webpack.getModule((m) => m.ADD_REACTIONS, { searchExports: true });
 var intlModule = BdApi.Webpack.getByKeys("intl");
 var getRoles2 = (guild) => guild?.roles ?? GuildRoleStore?.getRolesSnapshot(guild?.id);
-var getPermString = (perm) => intlModule?.intl.string(intlModule.t[PermissionStringMap[perm]]) ?? perm.toString();
+var getPermString = (perm) => getPermissionLabel(perm, PermissionStringMap, intlModule);
+function formatPermissionName2(permission) {
+  return permission.split("_").map((part) => part[0].toUpperCase() + part.slice(1).toLowerCase()).join(" ");
+}
+function getPermissionLabel(permission, stringMap, translations) {
+  const token = stringMap[permission];
+  if (token === void 0) return formatPermissionName2(permission);
+  const translationToken = translations?.t?.[token];
+  if (translationToken == null) return formatPermissionName2(permission);
+  return translations?.intl?.string(translationToken) ?? formatPermissionName2(permission);
+}
 var PermissionStringMap = {
   ADD_REACTIONS: "yEoJAr",
   ADMINISTRATOR: "PGvZqX",
@@ -7080,6 +7090,15 @@ function classModuleToMap(module2) {
     classMap[key2] = descriptors[key2].value;
   }
   return classMap;
+}
+function getPermissionStyleClasses(lookup) {
+  const legacyTypography = classModuleToMap(lookup("text-xs/semibold"));
+  const currentTypography = classModuleToMap(lookup("body-xs/semibold"));
+  const typographyClasses = Object.assign({}, currentTypography, legacyTypography);
+  typographyClasses["text-xs/semibold"] ??= currentTypography["body-xs/semibold"];
+  typographyClasses["text-xs/normal"] ??= currentTypography["body-xs/normal"];
+  const colorClasses = classModuleToMap(lookup("defaultColor", "eyebrow") ?? lookup("defaultColor"));
+  return Object.assign({}, typographyClasses, colorClasses);
 }
 function stripUnresolvedClassTokens(html2) {
   return html2.replace(/{{(?!sectionTitle}})[^}]+}}/g, "");
@@ -7191,8 +7210,8 @@ var PermissionsViewer = class extends Plugin {
     if (this.permissionTemplates) return this.permissionTemplates;
     const PopoutRoleClasses = classModuleToMap(Webpack.getByKeys("roleCircle"));
     const PopoutRoleClasses2 = classModuleToMap(Webpack.getByKeys("role", "roleTag"));
-    const EyebrowClasses = classModuleToMap(Webpack.getByKeys("defaultColor", "eyebrow"));
-    const classMap = Object.assign({}, PopoutRoleClasses, PopoutRoleClasses2, EyebrowClasses, this.getPopoutClassMap(popout));
+    const StyleClasses = getPermissionStyleClasses((...keys) => Webpack.getByKeys(...keys));
+    const classMap = Object.assign({}, PopoutRoleClasses, PopoutRoleClasses2, StyleClasses, this.getPopoutClassMap(popout));
     if (RequiredTemplateClassKeys.some((key2) => typeof classMap[key2] !== "string" || !classMap[key2])) return null;
     this.permissionTemplates = {
       sectionHTML: stripUnresolvedClassTokens(formatString(list_default, classMap)),
